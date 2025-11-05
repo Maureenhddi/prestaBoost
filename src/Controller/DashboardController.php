@@ -182,7 +182,8 @@ class DashboardController extends AbstractController
         $comparePeriod = $request->query->get('compare', 'yesterday');
         $filter = $request->query->get('filter', 'all');
 
-        $paginator = $dailyStockRepository->findLatestSnapshotPaginated($boutique, $page, $perPage);
+        // Get ALL stocks (not paginated yet)
+        $allStocks = $dailyStockRepository->findLatestSnapshot($boutique);
 
         // Get comparison data
         $compareDate = $this->getCompareDate($comparePeriod);
@@ -195,7 +196,7 @@ class DashboardController extends AbstractController
         }
 
         // Add variations to current stocks and calculate stats
-        $stocksWithVariation = [];
+        $allStocksWithVariation = [];
         $stats = [
             'total' => 0,
             'outOfStock' => 0,
@@ -203,7 +204,7 @@ class DashboardController extends AbstractController
             'withChanges' => 0,
         ];
 
-        foreach ($paginator as $stock) {
+        foreach ($allStocks as $stock) {
             $currentQty = $stock->getQuantity();
             $previousQty = $compareMap[$stock->getProductId()] ?? null;
             $variation = $previousQty !== null ? ($currentQty - $previousQty) : null;
@@ -216,7 +217,7 @@ class DashboardController extends AbstractController
                     : null
             ];
 
-            // Calculate stats
+            // Calculate stats (always on ALL products)
             $stats['total']++;
             if ($currentQty == 0) $stats['outOfStock']++;
             if ($currentQty > 0 && $currentQty < 10) $stats['lowStock']++;
@@ -231,17 +232,17 @@ class DashboardController extends AbstractController
             };
 
             if ($shouldInclude) {
-                $stocksWithVariation[] = $item;
+                $allStocksWithVariation[] = $item;
             }
         }
 
-        // Recalculate pagination for filtered results
-        $filteredCount = count($stocksWithVariation);
+        // Calculate pagination on filtered results
+        $filteredCount = count($allStocksWithVariation);
         $totalPages = (int) ceil($filteredCount / $perPage);
 
         // Apply pagination to filtered results
         $offset = ($page - 1) * $perPage;
-        $stocksWithVariation = array_slice($stocksWithVariation, $offset, $perPage);
+        $stocksWithVariation = array_slice($allStocksWithVariation, $offset, $perPage);
 
         return $this->render('dashboard/stocks.html.twig', [
             'boutique' => $boutique,
