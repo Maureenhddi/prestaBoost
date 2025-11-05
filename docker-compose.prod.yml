@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: ./infra/docker/nginx
+      dockerfile: Dockerfile
+    container_name: prestaboost_nginx_prod
+    restart: always
+    volumes:
+      - ./:/var/www/html:ro
+      - ./public:/var/www/html/public:ro
+    depends_on:
+      - php
+    networks:
+      - prestaboost_network
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+
+      # HTTP
+      - "traefik.http.routers.prestaboost.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.prestaboost.entrypoints=web"
+      - "traefik.http.routers.prestaboost.middlewares=redirect-to-https"
+
+      # HTTPS
+      - "traefik.http.routers.prestaboost-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.prestaboost-secure.entrypoints=websecure"
+      - "traefik.http.routers.prestaboost-secure.tls=true"
+      - "traefik.http.routers.prestaboost-secure.tls.certresolver=letsencrypt"
+
+      # Service
+      - "traefik.http.services.prestaboost.loadbalancer.server.port=80"
+
+      # Middleware redirect HTTP to HTTPS
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+  php:
+    build:
+      context: ./infra/docker/php
+      dockerfile: Dockerfile
+    container_name: prestaboost_php_prod
+    restart: always
+    volumes:
+      - ./:/var/www/html
+    environment:
+      APP_ENV: prod
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?serverVersion=15&charset=utf8
+      JWT_SECRET_KEY: /var/www/html/config/jwt/private.pem
+      JWT_PUBLIC_KEY: /var/www/html/config/jwt/public.pem
+      JWT_PASSPHRASE: ${JWT_PASSPHRASE}
+      CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN}
+      DEFAULT_URI: https://${DOMAIN}
+    depends_on:
+      - postgres
+    networks:
+      - prestaboost_network
+    user: root
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: prestaboost_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    networks:
+      - prestaboost_network
+
+volumes:
+  postgres_data_prod:
+    driver: local
+
+networks:
+  prestaboost_network:
+    driver: bridge
+  traefik-public:
+    external: true
