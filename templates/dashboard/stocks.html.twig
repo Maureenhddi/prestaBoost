@@ -173,7 +173,7 @@
         <h2 style="margin: 0;">Stocks actuels</h2>
         <div style="display: flex; align-items: center; gap: 15px;">
             <label style="margin: 0; color: var(--dark-text); font-weight: 600;">Comparer avec:</label>
-            <select id="comparePeriod" onchange="window.location.href='{{ path('app_boutique_stocks', {id: boutique.id, filter: filter}) }}?compare=' + this.value" style="padding: 8px 15px; border-radius: 12px; border: 2px solid var(--pastel-purple); background: var(--white); font-weight: 600; cursor: pointer;">
+            <select id="comparePeriod" onchange="const url = new URL(window.location); url.searchParams.set('compare', this.value); window.location.href = url.toString();" style="padding: 8px 15px; border-radius: 12px; border: 2px solid var(--pastel-purple); background: var(--white); font-weight: 600; cursor: pointer;">
                 <option value="yesterday" {{ comparePeriod == 'yesterday' ? 'selected' : '' }}>Hier</option>
                 <option value="lastweek" {{ comparePeriod == 'lastweek' ? 'selected' : '' }}>Semaine dernière</option>
                 <option value="lastmonth" {{ comparePeriod == 'lastmonth' ? 'selected' : '' }}>Mois dernier</option>
