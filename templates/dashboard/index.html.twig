@@ -132,11 +132,102 @@
         <div class="stat-label">Produits suivis</div>
     </div>
 
-    <div class="stat-card green">
-        <div class="stat-number">✓</div>
-        <div class="stat-label">Tout fonctionne</div>
+    <div class="stat-card" style="background: linear-gradient(135deg, var(--pastel-yellow), var(--pastel-peach));">
+        <div class="stat-number">{{ lowStock }}</div>
+        <div class="stat-label">Stock faible</div>
+    </div>
+
+    <div class="stat-card" style="background: linear-gradient(135deg, #FFB3B3, #FF9999);">
+        <div class="stat-number">{{ outOfStock }}</div>
+        <div class="stat-label">En rupture</div>
     </div>
 </div>
+
+{% if lowStockProducts is not empty %}
+<div class="card" style="margin-bottom: 30px; border-left: 5px solid var(--pastel-peach);">
+    <h2 style="color: #ff6b6b; margin-bottom: 20px;">⚠️ Alertes Stock Faible</h2>
+    <p style="margin-bottom: 20px; color: var(--dark-text); opacity: 0.8;">
+        Produits nécessitant un réapprovisionnement urgent
+    </p>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
+            <thead>
+                <tr style="background: var(--pastel-peach);">
+                    <th style="padding: 15px; text-align: left; font-weight: 600; border-radius: 15px 0 0 15px;">Boutique</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600;">Produit</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600;">Référence</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600;">Quantité</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600; border-radius: 0 15px 15px 0;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in lowStockProducts %}
+                <tr style="background: var(--white); transition: all 0.3s ease;">
+                    <td style="padding: 15px; border-radius: 15px 0 0 15px;">{{ item.boutique.name }}</td>
+                    <td style="padding: 15px;">{{ item.stock.name }}</td>
+                    <td style="padding: 15px;">{{ item.stock.reference ?? '-' }}</td>
+                    <td style="padding: 15px;">
+                        <span style="padding: 5px 15px; border-radius: 20px; font-weight: 600; {% if item.stock.quantity == 0 %}background: #FFB3B3;{% else %}background: var(--pastel-yellow);{% endif %}">
+                            {{ item.stock.quantity }}
+                        </span>
+                    </td>
+                    <td style="padding: 15px; border-radius: 0 15px 15px 0;">
+                        <a href="{{ path('app_boutique_stocks', {id: item.boutique.id, filter: 'low'}) }}" class="btn btn-primary" style="padding: 8px 15px; font-size: 14px;">
+                            Voir détails
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% if topSellingProducts is not empty %}
+<div class="card" style="margin-bottom: 30px; border-left: 5px solid var(--pastel-green);">
+    <h2 style="color: #28a745; margin-bottom: 20px;">🔥 Top Produits Vendus</h2>
+    <p style="margin-bottom: 20px; color: var(--dark-text); opacity: 0.8;">
+        Produits les plus vendus sur les 7 derniers jours
+    </p>
+
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
+            <thead>
+                <tr style="background: var(--pastel-green);">
+                    <th style="padding: 15px; text-align: left; font-weight: 600; border-radius: 15px 0 0 15px;">Boutique</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600;">Produit</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600;">Référence</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600;">Vendus</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600;">Stock actuel</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600; border-radius: 0 15px 15px 0;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in topSellingProducts %}
+                <tr style="background: var(--white); transition: all 0.3s ease;">
+                    <td style="padding: 15px; border-radius: 15px 0 0 15px;">{{ item.boutique.name }}</td>
+                    <td style="padding: 15px;">{{ item.stock.name }}</td>
+                    <td style="padding: 15px;">{{ item.stock.reference ?? '-' }}</td>
+                    <td style="padding: 15px;">
+                        <span style="padding: 5px 15px; border-radius: 20px; font-weight: 600; background: var(--pastel-green); color: var(--dark-text);">
+                            -{{ item.sold }}
+                        </span>
+                    </td>
+                    <td style="padding: 15px;">{{ item.stock.quantity }}</td>
+                    <td style="padding: 15px; border-radius: 0 15px 15px 0;">
+                        <a href="{{ path('app_boutique_stocks', {id: item.boutique.id}) }}" class="btn btn-primary" style="padding: 8px 15px; font-size: 14px;">
+                            Voir détails
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">

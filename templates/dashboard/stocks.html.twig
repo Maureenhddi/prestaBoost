@@ -173,15 +173,41 @@
         <h2 style="margin: 0;">Stocks actuels</h2>
         <div style="display: flex; align-items: center; gap: 15px;">
             <label style="margin: 0; color: var(--dark-text); font-weight: 600;">Comparer avec:</label>
-            <select id="comparePeriod" onchange="window.location.href='{{ path('app_boutique_stocks', {id: boutique.id}) }}?compare=' + this.value" style="padding: 8px 15px; border-radius: 12px; border: 2px solid var(--pastel-purple); background: var(--white); font-weight: 600; cursor: pointer;">
+            <select id="comparePeriod" onchange="window.location.href='{{ path('app_boutique_stocks', {id: boutique.id, filter: filter}) }}?compare=' + this.value" style="padding: 8px 15px; border-radius: 12px; border: 2px solid var(--pastel-purple); background: var(--white); font-weight: 600; cursor: pointer;">
                 <option value="yesterday" {{ comparePeriod == 'yesterday' ? 'selected' : '' }}>Hier</option>
                 <option value="lastweek" {{ comparePeriod == 'lastweek' ? 'selected' : '' }}>Semaine dernière</option>
                 <option value="lastmonth" {{ comparePeriod == 'lastmonth' ? 'selected' : '' }}>Mois dernier</option>
             </select>
-            <p style="margin: 0; color: var(--dark-text); opacity: 0.7;">
-                {{ totalItems }} produits
-            </p>
         </div>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'all'}) }}"
+           class="filter-btn {{ filter == 'all' ? 'active' : '' }}"
+           style="padding: 10px 20px; border-radius: 15px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; {{ filter == 'all' ? 'background: var(--pastel-purple); color: var(--dark-text);' : 'background: var(--light-bg); color: var(--dark-text); opacity: 0.7;' }}">
+            Tous ({{ stats.total }})
+        </a>
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'changes'}) }}"
+           class="filter-btn {{ filter == 'changes' ? 'active' : '' }}"
+           style="padding: 10px 20px; border-radius: 15px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; {{ filter == 'changes' ? 'background: var(--pastel-blue); color: var(--dark-text);' : 'background: var(--light-bg); color: var(--dark-text); opacity: 0.7;' }}">
+            Avec changements ({{ stats.withChanges }})
+        </a>
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'low'}) }}"
+           class="filter-btn {{ filter == 'low' ? 'active' : '' }}"
+           style="padding: 10px 20px; border-radius: 15px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; {{ filter == 'low' ? 'background: var(--pastel-yellow); color: var(--dark-text);' : 'background: var(--light-bg); color: var(--dark-text); opacity: 0.7;' }}">
+            Stock faible ({{ stats.lowStock }})
+        </a>
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'outofstock'}) }}"
+           class="filter-btn {{ filter == 'outofstock' ? 'active' : '' }}"
+           style="padding: 10px 20px; border-radius: 15px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; {{ filter == 'outofstock' ? 'background: #FFB3B3; color: var(--dark-text);' : 'background: var(--light-bg); color: var(--dark-text); opacity: 0.7;' }}">
+            Rupture ({{ stats.outOfStock }})
+        </a>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <p style="margin: 0; color: var(--dark-text); opacity: 0.7;">
+            {{ totalItems }} produit{{ totalItems > 1 ? 's' : '' }} affiché{{ totalItems > 1 ? 's' : '' }}
+        </p>
     </div>
 
     {% if stocks is empty %}
@@ -245,10 +271,10 @@
         {% if totalPages > 1 %}
         <div class="pagination">
             {% if currentPage > 1 %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: 1, compare: comparePeriod}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: 1, compare: comparePeriod, filter: filter}) }}" class="pagination-btn">
                     &laquo; Première
                 </a>
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, compare: comparePeriod}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, compare: comparePeriod, filter: filter}) }}" class="pagination-btn">
                     &lsaquo; Précédente
                 </a>
             {% endif %}
@@ -258,10 +284,10 @@
             </span>
 
             {% if currentPage < totalPages %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, compare: comparePeriod}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, compare: comparePeriod, filter: filter}) }}" class="pagination-btn">
                     Suivante &rsaquo;
                 </a>
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: totalPages, compare: comparePeriod}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: totalPages, compare: comparePeriod, filter: filter}) }}" class="pagination-btn">
                     Dernière &raquo;
                 </a>
             {% endif %}
