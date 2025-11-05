@@ -7,7 +7,9 @@ use App\Entity\BoutiqueUser;
 use App\Repository\BoutiqueRepository;
 use App\Repository\UserRepository;
 use App\Service\BoutiqueAuthorizationService;
+use App\Service\PrestaShopCollector;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,17 +25,23 @@ class BoutiqueController extends AbstractController
     private EntityManagerInterface $entityManager;
     private BoutiqueAuthorizationService $authService;
     private ValidatorInterface $validator;
+    private PrestaShopCollector $prestaShopCollector;
+    private LoggerInterface $logger;
 
     public function __construct(
         BoutiqueRepository $boutiqueRepository,
         EntityManagerInterface $entityManager,
         BoutiqueAuthorizationService $authService,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        PrestaShopCollector $prestaShopCollector,
+        LoggerInterface $logger
     ) {
         $this->boutiqueRepository = $boutiqueRepository;
         $this->entityManager = $entityManager;
         $this->authService = $authService;
         $this->validator = $validator;
+        $this->prestaShopCollector = $prestaShopCollector;
+        $this->logger = $logger;
     }
 
     /**
@@ -110,13 +118,47 @@ class BoutiqueController extends AbstractController
         $this->entityManager->persist($boutiqueUser);
         $this->entityManager->flush();
 
+        // Automatically collect stock data for the new boutique
+        $collectionResult = null;
+        try {
+            $this->logger->info('Auto-collecting stock data for new boutique', [
+                'boutique_id' => $boutique->getId(),
+                'boutique_name' => $boutique->getName()
+            ]);
+
+            $collectionResult = $this->prestaShopCollector->collectStockData($boutique);
+
+            if ($collectionResult['success']) {
+                $this->logger->info('Stock data collected successfully', [
+                    'boutique_id' => $boutique->getId(),
+                    'saved_count' => $collectionResult['saved_count']
+                ]);
+            } else {
+                $this->logger->warning('Stock data collection failed', [
+                    'boutique_id' => $boutique->getId(),
+                    'error' => $collectionResult['error'] ?? 'Unknown error'
+                ]);
+            }
+        } catch (\Exception $e) {
+            $this->logger->error('Error during auto stock collection', [
+                'boutique_id' => $boutique->getId(),
+                'error' => $e->getMessage()
+            ]);
+        }
+
         return $this->json([
             'success' => true,
             'data' => [
                 'id' => $boutique->getId(),
                 'name' => $boutique->getName(),
                 'domain' => $boutique->getDomain(),
-            ]
+                'stock_collected' => $collectionResult['success'] ?? false,
+                'stocks_count' => $collectionResult['saved_count'] ?? 0,
+            ],
+            'message' => 'Boutique créée avec succès' .
+                ($collectionResult['success'] ?? false ?
+                    ' et ' . ($collectionResult['saved_count'] ?? 0) . ' produits collectés.' :
+                    '. Collecte des stocks échouée, vous pouvez la relancer manuellement.')
         ], 201);
     }
 
