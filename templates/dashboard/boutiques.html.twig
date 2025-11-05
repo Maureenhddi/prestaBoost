@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes Boutiques - PrestaBoost{% endblock %}
+
+{% block navbar %}
+<div class="container">
+    <nav class="navbar">
+        <div class="navbar-brand">PrestaBoost</div>
+        <ul class="navbar-menu">
+            <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
+            <li><a href="{{ path('app_boutiques') }}">Mes Boutiques</a></li>
+            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h1 style="font-size: 32px; color: var(--dark-text);">Mes Boutiques</h1>
+    <a href="{{ path('app_boutique_new') }}" class="btn btn-primary">Ajouter une boutique</a>
+</div>
+
+<div class="grid grid-2">
+    {% for boutique in boutiques %}
+        <div class="card" style="padding: 30px;">
+            <h3 style="font-size: 24px; margin-bottom: 10px;">{{ boutique.name }}</h3>
+            <p style="color: var(--dark-text); opacity: 0.7; margin-bottom: 20px;">{{ boutique.domain }}</p>
+
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="btn btn-primary">
+                    Voir les stocks
+                </a>
+                <a href="#" class="btn btn-secondary">Paramètres</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="card" style="padding: 60px; text-align: center; grid-column: 1 / -1;">
+            <h3 style="font-size: 24px; margin-bottom: 15px;">Aucune boutique</h3>
+            <p style="opacity: 0.6; margin-bottom: 20px;">Vous n'avez pas encore de boutique connectée</p>
+            <a href="{{ path('app_boutique_new') }}" class="btn btn-primary">Créer ma première boutique</a>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

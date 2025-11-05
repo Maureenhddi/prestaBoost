@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle Boutique - PrestaBoost{% endblock %}
+
+{% block navbar %}
+<div class="container">
+    <nav class="navbar">
+        <div class="navbar-brand">PrestaBoost</div>
+        <ul class="navbar-menu">
+            <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
+            <li><a href="{{ path('app_boutiques') }}">Mes Boutiques</a></li>
+            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block body %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .form-header h1 {
+        font-size: 32px;
+        color: var(--dark-text);
+        margin-bottom: 10px;
+    }
+
+    .form-header p {
+        color: var(--dark-text);
+        opacity: 0.7;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .form-actions .btn {
+        flex: 1;
+    }
+
+    .help-text {
+        font-size: 14px;
+        color: var(--dark-text);
+        opacity: 0.6;
+        margin-top: 5px;
+    }
+
+    .info-box {
+        background: var(--pastel-blue);
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+
+    .info-box h3 {
+        margin-bottom: 10px;
+        color: var(--dark-text);
+    }
+
+    .info-box p {
+        margin-bottom: 10px;
+        color: var(--dark-text);
+    }
+
+    .info-box ul {
+        margin-left: 20px;
+        color: var(--dark-text);
+    }
+
+    .info-box li {
+        margin-bottom: 5px;
+    }
+</style>
+
+<div class="form-container">
+    <div class="card">
+        <div class="form-header">
+            <h1>Ajouter une boutique</h1>
+            <p>Connectez votre boutique PrestaShop à PrestaBoost</p>
+        </div>
+
+        <div class="info-box">
+            <h3>Comment obtenir votre clé API ?</h3>
+            <p>Pour connecter votre boutique PrestaShop, vous devez activer les webservices :</p>
+            <ul>
+                <li>Allez dans <strong>Paramètres avancés > Webservice</strong></li>
+                <li>Cliquez sur <strong>Ajouter une nouvelle clé</strong></li>
+                <li>Générez une clé et donnez-lui les permissions nécessaires</li>
+                <li>Copiez la clé générée ci-dessous</li>
+            </ul>
+        </div>
+
+        <form method="post" action="{{ path('app_boutique_create') }}">
+            <div class="input-group">
+                <label for="name">Nom de la boutique</label>
+                <input type="text" id="name" name="name" required placeholder="Ma Boutique PrestaShop">
+                <div class="help-text">Un nom pour identifier facilement votre boutique</div>
+            </div>
+
+            <div class="input-group">
+                <label for="domain">URL de votre boutique</label>
+                <input type="url" id="domain" name="domain" required placeholder="https://ma-boutique.com">
+                <div class="help-text">L'URL complète de votre boutique PrestaShop</div>
+            </div>
+
+            <div class="input-group">
+                <label for="api_key">Clé API PrestaShop</label>
+                <input type="text" id="api_key" name="api_key" required placeholder="ABC123...">
+                <div class="help-text">La clé API générée dans vos paramètres PrestaShop</div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ path('app_dashboard') }}" class="btn btn-secondary">Annuler</a>
+                <button type="submit" class="btn btn-primary">Ajouter la boutique</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

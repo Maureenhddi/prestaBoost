@@ -1,0 +1,185 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion - PrestaBoost{% endblock %}
+
+{% block body %}
+<style>
+    .auth-container {
+        min-height: calc(100vh - 40px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .auth-card {
+        max-width: 450px;
+        width: 100%;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .auth-header h1 {
+        font-size: 32px;
+        background: linear-gradient(135deg, var(--pastel-purple), var(--pastel-pink));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+    }
+
+    .auth-header p {
+        color: var(--dark-text);
+        opacity: 0.8;
+    }
+
+    .tab-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+        background: var(--light-bg);
+        padding: 5px;
+        border-radius: 15px;
+    }
+
+    .tab {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        background: transparent;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        color: var(--dark-text);
+    }
+
+    .tab.active {
+        background: var(--white);
+        box-shadow: 0 2px 10px var(--shadow);
+    }
+
+    .form-content {
+        display: none;
+    }
+
+    .form-content.active {
+        display: block;
+    }
+
+    .btn-block {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .checkbox-group input {
+        width: auto;
+        margin-right: 10px;
+    }
+
+    .error-message {
+        background: var(--pastel-peach);
+        padding: 15px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        color: var(--dark-text);
+    }
+</style>
+
+<div class="auth-container">
+    <div class="card auth-card">
+        <div class="auth-header">
+            <h1>PrestaBoost</h1>
+            <p>Gérez vos boutiques PrestaShop facilement</p>
+        </div>
+
+        <div class="tab-container">
+            <button class="tab active" onclick="showTab('login')">Connexion</button>
+            <button class="tab" onclick="showTab('register')">Inscription</button>
+        </div>
+
+        {% if error %}
+            <div class="error-message">
+                {{ error.messageKey|trans(error.messageData, 'security') }}
+            </div>
+        {% endif %}
+
+        <!-- Login Form -->
+        <div id="login-form" class="form-content active">
+            <form method="post" action="{{ path('app_login') }}">
+                <div class="input-group">
+                    <label for="username">Adresse email</label>
+                    <input type="email" id="username" name="_username" value="{{ last_username }}" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="_password" required>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="remember_me" name="_remember_me">
+                    <label for="remember_me">Se souvenir de moi</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Se connecter
+                </button>
+            </form>
+        </div>
+
+        <!-- Register Form -->
+        <div id="register-form" class="form-content">
+            <form method="post" action="{{ path('app_register') }}">
+                <div class="input-group">
+                    <label for="reg_firstName">Prénom</label>
+                    <input type="text" id="reg_firstName" name="firstName" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="reg_lastName">Nom</label>
+                    <input type="text" id="reg_lastName" name="lastName" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="reg_email">Adresse email</label>
+                    <input type="email" id="reg_email" name="email" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="reg_password">Mot de passe</label>
+                    <input type="password" id="reg_password" name="password" required minlength="6">
+                </div>
+
+                <div class="input-group">
+                    <label for="reg_password_confirm">Confirmer le mot de passe</label>
+                    <input type="password" id="reg_password_confirm" name="password_confirm" required minlength="6">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    S'inscrire
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showTab(tab) {
+        // Update tabs
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Update forms
+        document.querySelectorAll('.form-content').forEach(f => f.classList.remove('active'));
+        document.getElementById(tab + '-form').classList.add('active');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,8 @@
+framework:
+    scheduler:
+        enabled: false
+
+when@test:
+    framework:
+        scheduler:
+            enabled: false

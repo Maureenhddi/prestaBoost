@@ -1,0 +1,272 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Stocks - {{ boutique.name }}{% endblock %}
+
+{% block navbar %}
+<div class="container">
+    <nav class="navbar">
+        <div class="navbar-brand">PrestaBoost</div>
+        <ul class="navbar-menu">
+            <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
+            <li><a href="{{ path('app_boutiques') }}">Mes Boutiques</a></li>
+            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block body %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .page-title h1 {
+        font-size: 32px;
+        color: var(--dark-text);
+        margin-bottom: 5px;
+    }
+
+    .page-title p {
+        color: var(--dark-text);
+        opacity: 0.7;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 10px;
+    }
+
+    table thead th {
+        background: var(--pastel-purple);
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--dark-text);
+    }
+
+    table thead th:first-child {
+        border-radius: 15px 0 0 15px;
+    }
+
+    table thead th:last-child {
+        border-radius: 0 15px 15px 0;
+    }
+
+    table tbody tr {
+        background: var(--white);
+        transition: all 0.3s ease;
+    }
+
+    table tbody tr:hover {
+        box-shadow: 0 5px 15px var(--shadow);
+    }
+
+    table tbody td {
+        padding: 15px;
+        color: var(--dark-text);
+    }
+
+    table tbody td:first-child {
+        border-radius: 15px 0 0 15px;
+    }
+
+    table tbody td:last-child {
+        border-radius: 0 15px 15px 0;
+    }
+
+    .stock-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .stock-high {
+        background: var(--pastel-green);
+        color: var(--dark-text);
+    }
+
+    .stock-medium {
+        background: var(--pastel-yellow);
+        color: var(--dark-text);
+    }
+
+    .stock-low {
+        background: var(--pastel-peach);
+        color: var(--dark-text);
+    }
+
+    .stock-out {
+        background: #FFB3B3;
+        color: var(--dark-text);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state h3 {
+        font-size: 24px;
+        color: var(--dark-text);
+        margin-bottom: 15px;
+    }
+
+    .empty-state p {
+        color: var(--dark-text);
+        opacity: 0.6;
+        margin-bottom: 20px;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid var(--light-bg);
+    }
+
+    .pagination-btn {
+        padding: 10px 20px;
+        background: var(--pastel-blue);
+        color: var(--dark-text);
+        text-decoration: none;
+        border-radius: 15px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .pagination-btn:hover {
+        background: var(--pastel-purple);
+        transform: translateY(-2px);
+    }
+
+    .pagination-info {
+        padding: 10px 20px;
+        color: var(--dark-text);
+        font-weight: 600;
+    }
+</style>
+
+<div class="page-header">
+    <div class="page-title">
+        <h1>{{ boutique.name }}</h1>
+        <p>{{ boutique.domain }}</p>
+    </div>
+    <a href="{{ path('app_dashboard') }}" class="btn btn-secondary">Retour</a>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">Stocks actuels</h2>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <label style="margin: 0; color: var(--dark-text); font-weight: 600;">Comparer avec:</label>
+            <select id="comparePeriod" onchange="window.location.href='{{ path('app_boutique_stocks', {id: boutique.id}) }}?compare=' + this.value" style="padding: 8px 15px; border-radius: 12px; border: 2px solid var(--pastel-purple); background: var(--white); font-weight: 600; cursor: pointer;">
+                <option value="yesterday" {{ comparePeriod == 'yesterday' ? 'selected' : '' }}>Hier</option>
+                <option value="lastweek" {{ comparePeriod == 'lastweek' ? 'selected' : '' }}>Semaine dernière</option>
+                <option value="lastmonth" {{ comparePeriod == 'lastmonth' ? 'selected' : '' }}>Mois dernier</option>
+            </select>
+            <p style="margin: 0; color: var(--dark-text); opacity: 0.7;">
+                {{ totalItems }} produits
+            </p>
+        </div>
+    </div>
+
+    {% if stocks is empty %}
+        <div class="empty-state">
+            <h3>Aucun stock disponible</h3>
+            <p>Les données de stock pour cette boutique n'ont pas encore été collectées.</p>
+            <p style="font-size: 14px; opacity: 0.5;">Utilisez la commande <code>make collect-boutique ID={{ boutique.id }}</code> pour collecter les données.</p>
+        </div>
+    {% else %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Nom du produit</th>
+                        <th>Quantité</th>
+                        <th>Variation</th>
+                        <th>État</th>
+                        <th>Dernière mise à jour</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in stocks %}
+                        {% set stock = item.stock %}
+                        {% set variation = item.variation %}
+                        <tr>
+                            <td><strong>{{ stock.reference ?? '-' }}</strong></td>
+                            <td>{{ stock.name }}</td>
+                            <td>{{ stock.quantity }}</td>
+                            <td>
+                                {% if variation is not null %}
+                                    {% if variation > 0 %}
+                                        <span style="color: #28a745; font-weight: 600;">🔺 +{{ variation }}</span>
+                                    {% elseif variation < 0 %}
+                                        <span style="color: #dc3545; font-weight: 600;">🔻 {{ variation }}</span>
+                                    {% else %}
+                                        <span style="color: var(--dark-text); opacity: 0.6;">➡️ 0</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="opacity: 0.4;">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if stock.quantity == 0 %}
+                                    <span class="stock-badge stock-out">Rupture</span>
+                                {% elseif stock.quantity < 10 %}
+                                    <span class="stock-badge stock-low">Stock faible</span>
+                                {% elseif stock.quantity < 50 %}
+                                    <span class="stock-badge stock-medium">Stock moyen</span>
+                                {% else %}
+                                    <span class="stock-badge stock-high">En stock</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ stock.collectedAt|date('d/m/Y H:i') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if totalPages > 1 %}
+        <div class="pagination">
+            {% if currentPage > 1 %}
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: 1, compare: comparePeriod}) }}" class="pagination-btn">
+                    &laquo; Première
+                </a>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, compare: comparePeriod}) }}" class="pagination-btn">
+                    &lsaquo; Précédente
+                </a>
+            {% endif %}
+
+            <span class="pagination-info">
+                Page {{ currentPage }} sur {{ totalPages }}
+            </span>
+
+            {% if currentPage < totalPages %}
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, compare: comparePeriod}) }}" class="pagination-btn">
+                    Suivante &rsaquo;
+                </a>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: totalPages, compare: comparePeriod}) }}" class="pagination-btn">
+                    Dernière &raquo;
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

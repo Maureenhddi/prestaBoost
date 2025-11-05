@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Service;
+
+use Symfony\Component\Scheduler\Attribute\AsSchedule;
+use Symfony\Component\Scheduler\RecurringMessage;
+use Symfony\Component\Scheduler\Schedule;
+use Symfony\Component\Scheduler\ScheduleProviderInterface;
+
+/**
+ * Example schedule for automatic stock collection
+ *
+ * To use this:
+ * 1. Rename to StockCollectionSchedule.php (remove .example)
+ * 2. Install messenger component: composer require symfony/messenger
+ * 3. Create a message handler for StockCollectionMessage
+ * 4. Run: bin/console messenger:consume scheduler_default
+ *
+ * Or use a cron job instead:
+ * 0 2 * * * cd /path/to/PrestaBoost/infra && docker-compose exec -T php bin/console app:collect-prestashop-data --all
+ */
+#[AsSchedule('stock_collection')]
+class StockCollectionSchedule implements ScheduleProviderInterface
+{
+    public function getSchedule(): Schedule
+    {
+        return (new Schedule())
+            // Collect stock data every day at 2 AM
+            ->add(
+                RecurringMessage::cron('0 2 * * *', new StockCollectionMessage())
+            );
+    }
+}
+
+/**
+ * Message for stock collection
+ */
+class StockCollectionMessage
+{
+    // This message will be handled by a message handler
+    // which will call the PrestaShopCollector service
+}

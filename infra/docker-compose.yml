@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: prestaboost_php
+    volumes:
+      - ../:/var/www/html
+    environment:
+      DATABASE_URL: postgresql://prestaboost:prestaboost_password@postgres:5432/prestaboost_db?serverVersion=15&charset=utf8
+    depends_on:
+      - postgres
+    networks:
+      - prestaboost_network
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: prestaboost_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ../:/var/www/html
+    depends_on:
+      - php
+    networks:
+      - prestaboost_network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: prestaboost_postgres
+    environment:
+      POSTGRES_DB: prestaboost_db
+      POSTGRES_USER: prestaboost
+      POSTGRES_PASSWORD: prestaboost_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - prestaboost_network
+
+volumes:
+  postgres_data:
+
+networks:
+  prestaboost_network:
+    driver: bridge

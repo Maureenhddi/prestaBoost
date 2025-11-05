@@ -1,0 +1,13 @@
+.git
+.gitignore
+.idea
+.vscode
+var/cache/*
+var/log/*
+vendor/
+node_modules/
+.env.local
+.env.*.local
+README.md
+docker-compose*.yml
+Makefile
