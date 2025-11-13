@@ -2,12 +2,8 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
@@ -40,11 +36,13 @@ class SecurityController extends AbstractController
     }
 
     #[Route('/register', name: 'app_register', methods: ['POST'])]
-    public function register(
-        Request $request,
-        UserPasswordHasherInterface $passwordHasher,
-        EntityManagerInterface $entityManager
-    ): Response {
+    public function register(): Response
+    {
+        // Registration is disabled
+        $this->addFlash('error', 'Les inscriptions sont actuellement désactivées.');
+        return $this->redirectToRoute('app_login');
+
+        /* Registration code disabled
         $firstName = $request->request->get('firstName');
         $lastName = $request->request->get('lastName');
         $email = $request->request->get('email');
@@ -77,6 +75,7 @@ class SecurityController extends AbstractController
 
         $this->addFlash('success', 'Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter.');
         return $this->redirectToRoute('app_login');
+        */
     }
 
     #[Route('/logout', name: 'app_logout')]

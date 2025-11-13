@@ -2,6 +2,10 @@
 
 {% block title %}Stocks - {{ boutique.name }}{% endblock %}
 
+{% block stylesheets %}
+    <link rel="stylesheet" href="/css/stocks.css">
+{% endblock %}
+
 {% block navbar %}
 <div class="container">
     <nav class="navbar">
@@ -16,149 +20,6 @@
 {% endblock %}
 
 {% block body %}
-<style>
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
-    }
-
-    .page-title h1 {
-        font-size: 32px;
-        color: var(--dark-text);
-        margin-bottom: 5px;
-    }
-
-    .page-title p {
-        color: var(--dark-text);
-        opacity: 0.7;
-    }
-
-    .table-container {
-        overflow-x: auto;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0 10px;
-    }
-
-    table thead th {
-        background: var(--pastel-purple);
-        padding: 15px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--dark-text);
-    }
-
-    table thead th:first-child {
-        border-radius: 15px 0 0 15px;
-    }
-
-    table thead th:last-child {
-        border-radius: 0 15px 15px 0;
-    }
-
-    table tbody tr {
-        background: var(--white);
-        transition: all 0.3s ease;
-    }
-
-    table tbody tr:hover {
-        box-shadow: 0 5px 15px var(--shadow);
-    }
-
-    table tbody td {
-        padding: 15px;
-        color: var(--dark-text);
-    }
-
-    table tbody td:first-child {
-        border-radius: 15px 0 0 15px;
-    }
-
-    table tbody td:last-child {
-        border-radius: 0 15px 15px 0;
-    }
-
-    .stock-badge {
-        padding: 5px 15px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-        display: inline-block;
-    }
-
-    .stock-high {
-        background: var(--pastel-green);
-        color: var(--dark-text);
-    }
-
-    .stock-medium {
-        background: var(--pastel-yellow);
-        color: var(--dark-text);
-    }
-
-    .stock-low {
-        background: var(--pastel-peach);
-        color: var(--dark-text);
-    }
-
-    .stock-out {
-        background: #FFB3B3;
-        color: var(--dark-text);
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-    }
-
-    .empty-state h3 {
-        font-size: 24px;
-        color: var(--dark-text);
-        margin-bottom: 15px;
-    }
-
-    .empty-state p {
-        color: var(--dark-text);
-        opacity: 0.6;
-        margin-bottom: 20px;
-    }
-
-    .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 2px solid var(--light-bg);
-    }
-
-    .pagination-btn {
-        padding: 10px 20px;
-        background: var(--pastel-blue);
-        color: var(--dark-text);
-        text-decoration: none;
-        border-radius: 15px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .pagination-btn:hover {
-        background: var(--pastel-purple);
-        transform: translateY(-2px);
-    }
-
-    .pagination-info {
-        padding: 10px 20px;
-        color: var(--dark-text);
-        font-weight: 600;
-    }
-</style>
 
 <div class="page-header">
     <div class="page-title">
@@ -169,11 +30,11 @@
 </div>
 
 <div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0;">Stocks actuels</h2>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <label style="margin: 0; color: var(--dark-text); font-weight: 600;">Comparer avec:</label>
-            <select id="comparePeriod" onchange="const url = new URL(window.location); url.searchParams.set('compare', this.value); window.location.href = url.toString();" style="padding: 8px 15px; border-radius: 12px; border: 2px solid var(--pastel-purple); background: var(--white); font-weight: 600; cursor: pointer;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">Stocks actuels</h2>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <label style="margin: 0; font-weight: 600; font-size: 0.875rem;">Comparer avec:</label>
+            <select id="comparePeriod" onchange="const url = new URL(window.location); url.searchParams.set('compare', this.value); window.location.href = url.toString();">
                 <option value="yesterday" {{ comparePeriod == 'yesterday' ? 'selected' : '' }}>Hier</option>
                 <option value="lastweek" {{ comparePeriod == 'lastweek' ? 'selected' : '' }}>Semaine dernière</option>
                 <option value="lastmonth" {{ comparePeriod == 'lastmonth' ? 'selected' : '' }}>Mois dernier</option>
@@ -181,31 +42,27 @@
         </div>
     </div>
 
-    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+    <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
         <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'all'}) }}"
-           class="filter-btn {{ filter == 'all' ? 'active' : '' }}"
-           style="padding: 10px 20px; border-radius: 15px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; {{ filter == 'all' ? 'background: var(--pastel-purple); color: var(--dark-text);' : 'background: var(--light-bg); color: var(--dark-text); opacity: 0.7;' }}">
+           class="filter-btn {{ filter == 'all' ? 'active' : '' }}">
             Tous ({{ stats.total }})
         </a>
         <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'changes'}) }}"
-           class="filter-btn {{ filter == 'changes' ? 'active' : '' }}"
-           style="padding: 10px 20px; border-radius: 15px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; {{ filter == 'changes' ? 'background: var(--pastel-blue); color: var(--dark-text);' : 'background: var(--light-bg); color: var(--dark-text); opacity: 0.7;' }}">
+           class="filter-btn {{ filter == 'changes' ? 'active' : '' }}">
             Avec changements ({{ stats.withChanges }})
         </a>
         <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'low'}) }}"
-           class="filter-btn {{ filter == 'low' ? 'active' : '' }}"
-           style="padding: 10px 20px; border-radius: 15px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; {{ filter == 'low' ? 'background: var(--pastel-yellow); color: var(--dark-text);' : 'background: var(--light-bg); color: var(--dark-text); opacity: 0.7;' }}">
+           class="filter-btn {{ filter == 'low' ? 'active' : '' }}">
             Stock faible ({{ stats.lowStock }})
         </a>
         <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'outofstock'}) }}"
-           class="filter-btn {{ filter == 'outofstock' ? 'active' : '' }}"
-           style="padding: 10px 20px; border-radius: 15px; text-decoration: none; font-weight: 600; transition: all 0.3s ease; {{ filter == 'outofstock' ? 'background: #FFB3B3; color: var(--dark-text);' : 'background: var(--light-bg); color: var(--dark-text); opacity: 0.7;' }}">
+           class="filter-btn {{ filter == 'outofstock' ? 'active' : '' }}">
             Rupture ({{ stats.outOfStock }})
         </a>
     </div>
 
-    <div style="margin-bottom: 15px;">
-        <p style="margin: 0; color: var(--dark-text); opacity: 0.7;">
+    <div style="margin-bottom: 1.5rem;">
+        <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
             {{ totalItems }} produit{{ totalItems > 1 ? 's' : '' }} affiché{{ totalItems > 1 ? 's' : '' }}
         </p>
     </div>
