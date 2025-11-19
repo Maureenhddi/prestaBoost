@@ -3,7 +3,7 @@
 {% block title %}Stocks - {{ boutique.name }}{% endblock %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="/css/stocks.css">
+    <link rel="stylesheet" href="/css/stocks.css?v={{ 'now'|date('YmdHis') }}">
 {% endblock %}
 
 {% block navbar %}
@@ -34,7 +34,7 @@
         <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">Stocks actuels</h2>
         <div style="display: flex; align-items: center; gap: 1rem;">
             <label style="margin: 0; font-weight: 600; font-size: 0.875rem;">Comparer avec:</label>
-            <select id="comparePeriod" onchange="const url = new URL(window.location); url.searchParams.set('compare', this.value); window.location.href = url.toString();">
+            <select id="comparePeriod" class="filter-select">
                 <option value="yesterday" {{ comparePeriod == 'yesterday' ? 'selected' : '' }}>Hier</option>
                 <option value="lastweek" {{ comparePeriod == 'lastweek' ? 'selected' : '' }}>Semaine dernière</option>
                 <option value="lastmonth" {{ comparePeriod == 'lastmonth' ? 'selected' : '' }}>Mois dernier</option>
@@ -196,6 +196,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearTimeout(searchTimeout);
                 searchForm.submit();
             }
+        });
+    }
+
+    // Gérer le changement de période de comparaison
+    const comparePeriodSelect = document.getElementById('comparePeriod');
+    if (comparePeriodSelect) {
+        comparePeriodSelect.addEventListener('change', function() {
+            const url = new URL(window.location.href);
+            url.searchParams.set('compare', this.value);
+            url.searchParams.delete('page'); // Reset pagination
+            console.log('Redirecting to:', url.href); // Debug
+            window.location.href = url.href;
         });
     }
 });

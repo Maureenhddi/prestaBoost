@@ -3,7 +3,7 @@
 {% block title %}Historique - {{ boutique.name }}{% endblock %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="/css/stocks.css">
+    <link rel="stylesheet" href="/css/stocks.css?v={{ 'now'|date('YmdHis') }}">
     <style>
     .chart-container {
         background: white;
