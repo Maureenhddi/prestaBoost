@@ -43,27 +43,38 @@
     </div>
 
     <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'all'}) }}"
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'all', search: search}) }}"
            class="filter-btn {{ filter == 'all' ? 'active' : '' }}">
             Tous ({{ stats.total }})
         </a>
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'changes'}) }}"
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'changes', search: search}) }}"
            class="filter-btn {{ filter == 'changes' ? 'active' : '' }}">
             Avec changements ({{ stats.withChanges }})
         </a>
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'low'}) }}"
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'low', search: search}) }}"
            class="filter-btn {{ filter == 'low' ? 'active' : '' }}">
             Stock faible ({{ stats.lowStock }})
         </a>
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'outofstock'}) }}"
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'outofstock', search: search}) }}"
            class="filter-btn {{ filter == 'outofstock' ? 'active' : '' }}">
             Rupture ({{ stats.outOfStock }})
         </a>
     </div>
 
+    <form method="get" action="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="search-bar">
+        <input type="hidden" name="compare" value="{{ comparePeriod }}">
+        <input type="hidden" name="filter" value="{{ filter }}">
+        <input type="text"
+               name="search"
+               id="productSearch"
+               value="{{ search }}"
+               placeholder="🔍 Rechercher un produit (nom ou référence)..."
+               class="search-input">
+    </form>
+
     <div style="margin-bottom: 1.5rem;">
         <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
-            {{ totalItems }} produit{{ totalItems > 1 ? 's' : '' }} affiché{{ totalItems > 1 ? 's' : '' }}
+            <span id="displayCount">{{ totalItems }}</span> produit<span id="pluralProducts">{{ totalItems > 1 ? 's' : '' }}</span> affiché<span id="pluralDisplay">{{ totalItems > 1 ? 's' : '' }}</span>
         </p>
     </div>
 
@@ -84,6 +95,7 @@
                         <th>Variation</th>
                         <th>État</th>
                         <th>Dernière mise à jour</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -119,6 +131,13 @@
                                 {% endif %}
                             </td>
                             <td>{{ stock.collectedAt|date('d/m/Y H:i') }}</td>
+                            <td>
+                                <a href="{{ path('app_product_history', {boutiqueId: boutique.id, productId: stock.productId}) }}"
+                                   class="btn-chart"
+                                   title="Voir l'historique">
+                                    📈
+                                </a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -128,10 +147,10 @@
         {% if totalPages > 1 %}
         <div class="pagination">
             {% if currentPage > 1 %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: 1, compare: comparePeriod, filter: filter}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: 1, compare: comparePeriod, filter: filter, search: search}) }}" class="pagination-btn">
                     &laquo; Première
                 </a>
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, compare: comparePeriod, filter: filter}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, compare: comparePeriod, filter: filter, search: search}) }}" class="pagination-btn">
                     &lsaquo; Précédente
                 </a>
             {% endif %}
@@ -141,10 +160,10 @@
             </span>
 
             {% if currentPage < totalPages %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, compare: comparePeriod, filter: filter}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, compare: comparePeriod, filter: filter, search: search}) }}" class="pagination-btn">
                     Suivante &rsaquo;
                 </a>
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: totalPages, compare: comparePeriod, filter: filter}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: totalPages, compare: comparePeriod, filter: filter, search: search}) }}" class="pagination-btn">
                     Dernière &raquo;
                 </a>
             {% endif %}
@@ -152,4 +171,35 @@
         {% endif %}
     {% endif %}
 </div>
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('productSearch');
+    const searchForm = searchInput?.closest('form');
+
+    if (searchInput && searchForm) {
+        let searchTimeout;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+
+            // Auto-submit après 500ms d'inactivité
+            searchTimeout = setTimeout(() => {
+                searchForm.submit();
+            }, 500);
+        });
+
+        // Submit immédiat sur Enter
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                searchForm.submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+
 {% endblock %}

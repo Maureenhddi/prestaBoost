@@ -181,6 +181,7 @@ class DashboardController extends AbstractController
         $perPage = 50;
         $comparePeriod = $request->query->get('compare', 'yesterday');
         $filter = $request->query->get('filter', 'all');
+        $search = trim($request->query->get('search', ''));
 
         // Get ALL stocks (not paginated yet)
         $allStocks = $dailyStockRepository->findLatestSnapshot($boutique);
@@ -231,6 +232,17 @@ class DashboardController extends AbstractController
                 default => true, // 'all'
             };
 
+            // Apply search filter
+            if ($search !== '') {
+                $searchLower = mb_strtolower($search);
+                $reference = mb_strtolower($stock->getReference() ?? '');
+                $name = mb_strtolower($stock->getName() ?? '');
+
+                if (!str_contains($reference, $searchLower) && !str_contains($name, $searchLower)) {
+                    $shouldInclude = false;
+                }
+            }
+
             if ($shouldInclude) {
                 $allStocksWithVariation[] = $item;
             }
@@ -254,6 +266,50 @@ class DashboardController extends AbstractController
             'comparePeriod' => $comparePeriod,
             'filter' => $filter,
             'stats' => $stats,
+            'search' => $search,
+        ]);
+    }
+
+    #[Route('/boutiques/{boutiqueId}/stocks/{productId}/history', name: 'app_product_history')]
+    public function productHistory(
+        int $boutiqueId,
+        int $productId,
+        Request $request,
+        BoutiqueRepository $boutiqueRepository,
+        DailyStockRepository $dailyStockRepository,
+        BoutiqueAuthorizationService $authService
+    ): Response {
+        $boutique = $boutiqueRepository->find($boutiqueId);
+
+        if (!$boutique) {
+            throw $this->createNotFoundException('Boutique non trouvée');
+        }
+
+        $user = $this->getUser();
+        $authService->denyAccessUnlessGranted($user, $boutique);
+
+        $period = $request->query->get('period', '30'); // 7, 30, 90 days
+        $days = (int) $period;
+
+        // Get product history
+        $history = $dailyStockRepository->findProductHistory($boutique, $productId, $days);
+
+        // Format history for JSON serialization
+        $historyData = array_map(function($stock) {
+            return [
+                'productId' => $stock->getProductId(),
+                'name' => $stock->getName(),
+                'reference' => $stock->getReference(),
+                'quantity' => $stock->getQuantity(),
+                'collectedAt' => $stock->getCollectedAt()->format('Y-m-d H:i:s'),
+            ];
+        }, $history);
+
+        return $this->render('dashboard/product_history.html.twig', [
+            'boutique' => $boutique,
+            'productId' => $productId,
+            'history' => $historyData,
+            'period' => $period,
         ]);
     }
 
