@@ -50,27 +50,91 @@
 
 {% block body %}
 
-<div class="boutique-header">
-    <h1>{{ boutique.name }}</h1>
-    <p>{{ boutique.domain }}</p>
+<div class="dashboard-header">
+    <div class="header-left">
+        {% if boutique.logoUrl %}
+            <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}" class="boutique-logo-header">
+        {% else %}
+            <div class="boutique-initial">{{ boutique.name|slice(0, 1)|upper }}</div>
+        {% endif %}
+        <div class="header-info">
+            <h1>{{ boutique.name }}</h1>
+            <p>{{ boutique.domain }}</p>
+        </div>
+    </div>
+    <div class="header-actions">
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="btn-header btn-secondary">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            Voir stocks
+        </a>
+        <a href="{{ path('app_boutique_settings', {id: boutique.id}) }}" class="btn-header btn-secondary">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Paramètres
+        </a>
+    </div>
 </div>
 
 <div class="stats-grid">
-    <div class="stat-card blue">
-        <div class="stat-number">{{ totalProducts }}</div>
-        <div class="stat-label">Produits suivis</div>
+    <div class="stat-card stat-primary">
+        <div class="stat-icon">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-number">{{ totalProducts }}</div>
+            <div class="stat-label">Produits suivis</div>
+        </div>
     </div>
 
-    <div class="stat-card yellow">
-        <div class="stat-number">{{ lowStock }}</div>
-        <div class="stat-label">Stock faible</div>
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-number">{{ lowStock }}</div>
+            <div class="stat-label">Stock faible</div>
+            {% if lowStock > 0 %}
+                <div class="stat-action">À surveiller</div>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="stat-card red">
-        <div class="stat-number">{{ outOfStock }}</div>
-        <div class="stat-label">En rupture</div>
+    <div class="stat-card stat-danger">
+        <div class="stat-icon">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-number">{{ outOfStock }}</div>
+            <div class="stat-label">En rupture</div>
+            {% if outOfStock > 0 %}
+                <div class="stat-action">Action requise</div>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+{% if lowStock > 0 or outOfStock > 0 %}
+<div class="action-banner">
+    <div class="banner-icon">⚠️</div>
+    <div class="banner-content">
+        <h3>Action requise</h3>
+        <p>{{ outOfStock > 0 ? outOfStock ~ ' produit' ~ (outOfStock > 1 ? 's en' : ' en') ~ ' rupture' : '' }}{{ outOfStock > 0 and lowStock > 0 ? ' et ' : '' }}{{ lowStock > 0 ? lowStock ~ ' produit' ~ (lowStock > 1 ? 's' : '') ~ ' en stock faible' : '' }}</p>
+    </div>
+    <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: outOfStock > 0 ? 'outofstock' : 'low'}) }}" class="banner-btn">
+        Voir les produits →
+    </a>
+</div>
+{% endif %}
 
 <div class="alerts-section">
     <div class="alert-box">
@@ -125,54 +189,257 @@
 </div>
 
 <style>
-.boutique-header {
-    text-align: center;
-    margin-bottom: 40px;
+.dashboard-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 30px 40px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
 }
 
-.boutique-header h1 {
-    font-size: 36px;
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.boutique-logo-header {
+    max-height: 50px;
+    max-width: 120px;
+    object-fit: contain;
+}
+
+.boutique-initial {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
     font-weight: 700;
-    color: var(--dark-text);
-    margin-bottom: 5px;
+    color: white;
 }
 
-.boutique-header p {
-    font-size: 16px;
-    color: var(--dark-text);
-    opacity: 0.6;
+.header-info h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+}
+
+.header-info p {
+    font-size: 14px;
+    color: var(--gray-600);
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid var(--gray-300);
+    background: white;
+    color: var(--gray-700);
+}
+
+.btn-header:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 25px;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .stat-card {
     background: white;
-    padding: 30px;
+    padding: 28px;
     border-radius: 20px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
 }
 
-.stat-card.blue { border-top: 4px solid #3b82f6; }
-.stat-card.yellow { border-top: 4px solid #f59e0b; }
-.stat-card.red { border-top: 4px solid #ef4444; }
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card.stat-primary {
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.stat-card.stat-primary .stat-icon {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.stat-card.stat-warning {
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.stat-card.stat-warning .stat-icon {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.stat-card.stat-danger {
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.stat-card.stat-danger .stat-icon {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.stat-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.stat-icon svg {
+    color: white;
+}
+
+.stat-content {
+    flex: 1;
+}
 
 .stat-number {
-    font-size: 48px;
+    font-size: 36px;
     font-weight: 700;
-    color: var(--dark-text);
-    margin-bottom: 10px;
+    color: var(--gray-900);
+    margin-bottom: 6px;
+    line-height: 1;
 }
 
 .stat-label {
-    font-size: 16px;
-    color: var(--dark-text);
-    opacity: 0.7;
+    font-size: 15px;
+    color: var(--gray-600);
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.stat-action {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.stat-card.stat-warning .stat-action {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.action-banner {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #fbbf24;
+    border-radius: 20px;
+    padding: 24px 30px;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(251, 191, 36, 0.2);
+}
+
+.banner-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+}
+
+.banner-content {
+    flex: 1;
+}
+
+.banner-content h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 4px;
+}
+
+.banner-content p {
+    font-size: 14px;
+    color: #92400e;
+    margin: 0;
+}
+
+.banner-btn {
+    padding: 12px 24px;
+    background: white;
+    color: #d97706;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.banner-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .btn-header {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .action-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .banner-btn {
+        width: 100%;
+    }
 }
 
 .alerts-section {
