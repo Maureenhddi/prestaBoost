@@ -136,51 +136,111 @@
 </div>
 {% endif %}
 
-<div class="alerts-section">
-    <div class="alert-box">
-        <h2>🔴 Alertes Stock Faible</h2>
+<div class="insights-section">
+    <div class="insight-card insight-warning">
+        <div class="insight-header">
+            <div class="insight-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div class="insight-title">
+                <h3>Alertes Stock</h3>
+                <p>Produits nécessitant votre attention</p>
+            </div>
+        </div>
+
         {% if lowStockProducts is empty %}
-            <p class="empty-message">Aucun produit en stock faible</p>
+            <div class="empty-state">
+                <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.2;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p>Tout va bien !</p>
+                <span>Aucun produit en stock critique</span>
+            </div>
         {% else %}
             <div class="products-list">
                 {% for stock in lowStockProducts %}
-                    <div class="product-item {{ stock.quantity == 0 ? 'out-of-stock' : 'low-stock' }}">
-                        <div class="product-info">
-                            <span class="product-ref">{{ stock.reference }}</span>
-                            <span class="product-name">{{ stock.name }}</span>
+                    <div class="product-row {{ stock.quantity == 0 ? 'severity-critical' : 'severity-warning' }}">
+                        <div class="product-indicator"></div>
+                        <div class="product-details">
+                            <div class="product-main">
+                                <span class="product-name">{{ stock.name }}</span>
+                                <span class="product-ref">REF: {{ stock.reference }}</span>
+                            </div>
+                            <div class="product-meta">
+                                <div class="quantity-display {{ stock.quantity == 0 ? 'qty-critical' : 'qty-warning' }}">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                    </svg>
+                                    <span>{{ stock.quantity }} {{ stock.quantity > 1 ? 'unités' : 'unité' }}</span>
+                                </div>
+                                <span class="severity-label">{{ stock.quantity == 0 ? 'Rupture' : 'Stock faible' }}</span>
+                            </div>
                         </div>
-                        <div class="product-quantity">
-                            <span class="quantity-badge {{ stock.quantity == 0 ? 'badge-danger' : 'badge-warning' }}">
-                                {{ stock.quantity }} unités
-                            </span>
-                        </div>
+                        <a href="{{ path('app_product_history', {boutiqueId: boutique.id, productId: stock.productId}) }}" class="product-action" title="Voir l'historique">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
                     </div>
                 {% endfor %}
             </div>
-            <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'low'}) }}" class="view-all-link">
-                Voir tous les produits en stock faible →
+            <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'low'}) }}" class="view-all-btn">
+                <span>Voir tous les produits ({{ lowStockProducts|length }}{{ lowStockProducts|length >= 10 ? '+' : '' }})</span>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
             </a>
         {% endif %}
     </div>
 
-    <div class="alert-box">
-        <h2>🔥 Meilleures Ventes (7 derniers jours)</h2>
+    <div class="insight-card insight-success">
+        <div class="insight-header">
+            <div class="insight-icon">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+            </div>
+            <div class="insight-title">
+                <h3>Meilleures Ventes</h3>
+                <p>Top produits des 7 derniers jours</p>
+            </div>
+        </div>
+
         {% if topSellingProducts is empty %}
-            <p class="empty-message">Aucune vente détectée</p>
+            <div class="empty-state">
+                <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.2;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                <p>Pas encore de données</p>
+                <span>Les ventes apparaîtront ici</span>
+            </div>
         {% else %}
             <div class="products-list">
                 {% for item in topSellingProducts %}
-                    <div class="product-item selling">
-                        <div class="product-info">
-                            <span class="product-ref">{{ item.stock.reference }}</span>
-                            <span class="product-name">{{ item.stock.name }}</span>
+                    <div class="product-row selling-row">
+                        <div class="rank-badge">#{{ loop.index }}</div>
+                        <div class="product-details">
+                            <div class="product-main">
+                                <span class="product-name">{{ item.stock.name }}</span>
+                                <span class="product-ref">REF: {{ item.stock.reference }}</span>
+                            </div>
+                            <div class="product-meta">
+                                <div class="sales-info">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                    </svg>
+                                    <span class="sold-count">{{ item.sold }} vendu{{ item.sold > 1 ? 's' : '' }}</span>
+                                </div>
+                                <span class="stock-info">{{ item.stock.quantity }} en stock</span>
+                            </div>
                         </div>
-                        <div class="product-sales">
-                            <span class="sales-badge">
-                                {{ item.sold }} vendus
-                            </span>
-                            <span class="stock-remaining">{{ item.stock.quantity }} restants</span>
-                        </div>
+                        <a href="{{ path('app_product_history', {boutiqueId: boutique.id, productId: item.stock.productId}) }}" class="product-action" title="Voir l'historique">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
                     </div>
                 {% endfor %}
             </div>
@@ -442,126 +502,297 @@
     }
 }
 
-.alerts-section {
+.insights-section {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
     gap: 30px;
 }
 
-.alert-box {
+.insight-card {
     background: white;
     border-radius: 20px;
-    padding: 30px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
 }
 
-.alert-box h2 {
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--dark-text);
-    margin-bottom: 20px;
+.insight-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
-.empty-message {
+.insight-card.insight-warning {
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.insight-card.insight-success {
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.insight-header {
+    padding: 24px 28px;
+    background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.insight-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.insight-warning .insight-icon {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.insight-success .insight-icon {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.insight-icon svg {
+    color: white;
+}
+
+.insight-title h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+}
+
+.insight-title p {
+    font-size: 13px;
+    color: var(--gray-600);
+    margin: 0;
+}
+
+.empty-state {
+    padding: 60px 30px;
     text-align: center;
-    padding: 40px;
-    color: var(--dark-text);
-    opacity: 0.5;
+}
+
+.empty-state svg {
+    margin-bottom: 16px;
+}
+
+.empty-state p {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 6px;
+}
+
+.empty-state span {
+    font-size: 14px;
+    color: var(--gray-500);
 }
 
 .products-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    padding: 8px;
 }
 
-.product-item {
-    padding: 15px;
-    border-radius: 12px;
-    background: var(--surface-light);
+.product-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    position: relative;
 }
 
-.product-item.out-of-stock {
-    border-left: 4px solid #ef4444;
+.product-row:hover {
+    background: var(--gray-50);
+    transform: translateX(4px);
 }
 
-.product-item.low-stock {
-    border-left: 4px solid #f59e0b;
+.product-row:last-child {
+    margin-bottom: 0;
 }
 
-.product-item.selling {
-    border-left: 4px solid #10b981;
+.product-indicator {
+    width: 4px;
+    height: 40px;
+    border-radius: 2px;
+    flex-shrink: 0;
 }
 
-.product-info {
+.severity-critical .product-indicator {
+    background: linear-gradient(180deg, #ef4444, #dc2626);
+}
+
+.severity-warning .product-indicator {
+    background: linear-gradient(180deg, #f59e0b, #d97706);
+}
+
+.rank-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.product-details {
     flex: 1;
+    min-width: 0;
+}
+
+.product-main {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-}
-
-.product-ref {
-    font-size: 12px;
-    color: var(--dark-text);
-    opacity: 0.6;
-    font-weight: 600;
+    gap: 4px;
+    margin-bottom: 8px;
 }
 
 .product-name {
     font-size: 15px;
-    color: var(--dark-text);
+    font-weight: 600;
+    color: var(--gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.product-ref {
+    font-size: 12px;
+    color: var(--gray-500);
     font-weight: 500;
 }
 
-.product-quantity, .product-sales {
+.product-meta {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 5px;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
-.quantity-badge, .sales-badge {
-    padding: 6px 12px;
+.quantity-display, .sales-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
     border-radius: 8px;
     font-size: 13px;
     font-weight: 600;
 }
 
-.badge-warning {
-    background: #fef3c7;
-    color: #92400e;
+.qty-critical {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
 }
 
-.badge-danger {
-    background: #fee2e2;
-    color: #991b1b;
+.qty-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
 }
 
-.sales-badge {
-    background: #d1fae5;
-    color: #065f46;
+.sales-info {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
 }
 
-.stock-remaining {
-    font-size: 12px;
-    color: var(--dark-text);
-    opacity: 0.6;
+.quantity-display svg, .sales-info svg {
+    flex-shrink: 0;
 }
 
-.view-all-link {
-    display: block;
-    text-align: center;
-    margin-top: 20px;
-    color: var(--primary);
+.severity-label {
+    font-size: 11px;
     font-weight: 600;
-    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.view-all-link:hover {
-    text-decoration: underline;
+.severity-critical .severity-label {
+    color: #dc2626;
+}
+
+.severity-warning .severity-label {
+    color: #d97706;
+}
+
+.sold-count {
+    font-weight: 700;
+}
+
+.stock-info {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.product-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.product-action:hover {
+    background: var(--primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.view-all-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    margin: 16px 20px 20px;
+    background: var(--gray-100);
+    border-radius: 12px;
+    color: var(--gray-700);
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.view-all-btn:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+@media (max-width: 1024px) {
+    .insights-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-row {
+        flex-wrap: wrap;
+    }
+
+    .product-action {
+        margin-left: auto;
+    }
 }
 </style>
 
