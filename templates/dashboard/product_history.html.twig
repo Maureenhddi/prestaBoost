@@ -115,7 +115,6 @@
         <div class="navbar-brand">PrestaBoost</div>
         <ul class="navbar-menu">
             <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
-            <li><a href="{{ path('app_boutiques') }}">Mes Boutiques</a></li>
             {% if app.user.isSuperAdmin() %}
                 <li><a href="{{ path('app_users') }}">Utilisateurs</a></li>
             {% endif %}

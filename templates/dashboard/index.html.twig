@@ -11,7 +11,7 @@
     <nav class="navbar">
         <div class="navbar-brand">PrestaBoost</div>
         <ul class="navbar-menu">
-            <li><a href="{{ path('app_dashboard') }}" class="active">Mes Boutiques</a></li>
+            <li><a href="{{ path('app_dashboard') }}" class="active">Dashboard</a></li>
             {% if app.user.isSuperAdmin() %}
                 <li><a href="{{ path('app_users') }}">Utilisateurs</a></li>
             {% endif %}
@@ -26,12 +26,15 @@
 <div class="welcome-section">
     <h1>Bienvenue, {{ app.user.firstName }} !</h1>
     <p>Sélectionnez une boutique pour voir son dashboard</p>
+    {% if app.user.isSuperAdmin() %}
+        <a href="{{ path('app_boutique_new') }}" class="btn btn-primary" style="margin-top: 20px;">+ Ajouter une boutique</a>
+    {% endif %}
 </div>
 
 <div class="boutiques-grid">
     {% for boutique in boutiques %}
         {% set boutiqueColor = boutique.primaryColor ?? '#10b981' %}
-        <a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}" class="boutique-card">
+        <div class="boutique-card-enhanced">
             <div class="boutique-header" style="background: linear-gradient(135deg, {{ boutiqueColor }} 0%, {{ boutiqueColor }}dd 100%);">
                 {% if boutique.logoUrl %}
                     <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}" class="boutique-logo">
@@ -43,12 +46,33 @@
                 <h3>{{ boutique.name }}</h3>
                 <p class="boutique-domain">{{ boutique.domain }}</p>
             </div>
-            <div class="boutique-footer">
-                <span class="btn-view" style="color: {{ boutiqueColor }};">Voir le dashboard →</span>
+            <div class="boutique-actions">
+                <a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}" class="btn-action btn-action-primary" style="--action-color: {{ boutiqueColor }};">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="btn-action">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    Stocks
+                </a>
+                <a href="{{ path('app_boutique_settings', {id: boutique.id}) }}" class="btn-action">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Paramètres
+                </a>
             </div>
-        </a>
+        </div>
     {% else %}
         <div class="empty-state">
+            <svg width="120" height="120" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.2; margin: 0 auto 20px;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
             <h3>Aucune boutique</h3>
             <p>Vous n'avez pas encore de boutique connectée</p>
             {% if app.user.isSuperAdmin() %}
@@ -67,38 +91,37 @@
 .welcome-section h1 {
     font-size: 42px;
     font-weight: 700;
-    color: var(--dark-text);
+    color: white;
     margin-bottom: 10px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .welcome-section p {
     font-size: 18px;
-    color: var(--dark-text);
-    opacity: 0.7;
+    color: white;
+    opacity: 0.9;
 }
 
 .boutiques-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 30px;
     margin-top: 40px;
 }
 
-.boutique-card {
+.boutique-card-enhanced {
     background: white;
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     overflow: hidden;
     transition: all 0.3s ease;
-    text-decoration: none;
-    color: inherit;
     display: flex;
     flex-direction: column;
 }
 
-.boutique-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+.boutique-card-enhanced:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
 .boutique-header {
@@ -107,6 +130,24 @@
     justify-content: center;
     align-items: center;
     min-height: 150px;
+    position: relative;
+    overflow: hidden;
+}
+
+.boutique-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(180deg); }
 }
 
 .boutique-logo {
@@ -114,6 +155,8 @@
     max-height: 80px;
     object-fit: contain;
     filter: brightness(0) invert(1);
+    position: relative;
+    z-index: 1;
 }
 
 .boutique-logo-placeholder {
@@ -128,6 +171,8 @@
     font-weight: 700;
     color: white;
     border: 3px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    z-index: 1;
 }
 
 .boutique-body {
@@ -138,50 +183,90 @@
 .boutique-body h3 {
     font-size: 24px;
     font-weight: 600;
-    color: var(--dark-text);
-    margin-bottom: 10px;
+    color: var(--gray-900);
+    margin-bottom: 8px;
 }
 
 .boutique-domain {
     font-size: 14px;
-    color: var(--dark-text);
-    opacity: 0.6;
+    color: var(--gray-500);
     margin: 0;
 }
 
-.boutique-footer {
-    padding: 20px 30px;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+.boutique-actions {
+    padding: 20px;
+    display: flex;
+    gap: 10px;
+    background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
 }
 
-.btn-view {
-    display: inline-block;
+.btn-action {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
     font-weight: 600;
-    font-size: 16px;
-    transition: opacity 0.3s ease;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    background: white;
+    color: var(--gray-700);
+    border: 1px solid var(--gray-200);
 }
 
-.boutique-card:hover .btn-view {
-    opacity: 0.8;
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    color: var(--gray-900);
+    border-color: var(--gray-300);
+}
+
+.btn-action-primary {
+    background: var(--action-color, var(--primary));
+    color: white;
+    border-color: transparent;
+}
+
+.btn-action-primary:hover {
+    opacity: 0.9;
+    color: white;
 }
 
 .empty-state {
     grid-column: 1 / -1;
     text-align: center;
     padding: 100px 20px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .empty-state h3 {
     font-size: 28px;
-    color: var(--dark-text);
+    color: var(--gray-900);
     margin-bottom: 15px;
+    font-weight: 600;
 }
 
 .empty-state p {
     font-size: 16px;
-    color: var(--dark-text);
-    opacity: 0.6;
+    color: var(--gray-600);
     margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .boutiques-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .boutique-actions {
+        flex-direction: column;
+    }
 }
 </style>
 

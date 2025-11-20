@@ -123,22 +123,10 @@ class DashboardController extends AbstractController
     }
 
     #[Route('/boutiques', name: 'app_boutiques')]
-    public function boutiques(BoutiqueRepository $boutiqueRepository): Response
+    public function boutiques(): Response
     {
-        $user = $this->getUser();
-
-        if ($user->isSuperAdmin()) {
-            $boutiques = $boutiqueRepository->findAll();
-        } else {
-            $boutiques = [];
-            foreach ($user->getBoutiqueUsers() as $boutiqueUser) {
-                $boutiques[] = $boutiqueUser->getBoutique();
-            }
-        }
-
-        return $this->render('dashboard/boutiques.html.twig', [
-            'boutiques' => $boutiques,
-        ]);
+        // Redirect to main dashboard (this route is deprecated but kept for backward compatibility)
+        return $this->redirectToRoute('app_dashboard');
     }
 
     #[Route('/boutiques/new', name: 'app_boutique_new')]
