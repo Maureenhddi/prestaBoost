@@ -1,0 +1,301 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ boutique.name }} - Dashboard{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="/css/dashboard.css?v={{ 'now'|date('YmdHis') }}">
+    <style>
+        {% if boutique.primaryColor %}
+        :root {
+            --primary: {{ boutique.primaryColor }};
+        }
+
+        body {
+            background: linear-gradient(135deg, {{ boutique.primaryColor }} 0%, {{ boutique.primaryColor }}dd 100%);
+        }
+
+        body::before {
+            background:
+                radial-gradient(circle at 20% 50%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, {{ boutique.primaryColor }}26 0%, transparent 50%);
+        }
+        {% endif %}
+    </style>
+{% endblock %}
+
+{% block navbar %}
+<div class="container">
+    <nav class="navbar">
+        <div class="navbar-brand">
+            {% if boutique.logoUrl %}
+                <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}" style="max-height: 40px;">
+            {% else %}
+                {{ boutique.name }}
+            {% endif %}
+        </div>
+        <ul class="navbar-menu">
+            <li><a href="{{ path('app_dashboard') }}">← Mes Boutiques</a></li>
+            <li><a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}" class="active">Dashboard</a></li>
+            <li><a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}">Stocks</a></li>
+            <li><a href="{{ path('app_boutique_settings', {id: boutique.id}) }}">Paramètres</a></li>
+            {% if app.user.isSuperAdmin() %}
+                <li><a href="{{ path('app_users') }}">Utilisateurs</a></li>
+            {% endif %}
+            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block body %}
+
+<div class="boutique-header">
+    <h1>{{ boutique.name }}</h1>
+    <p>{{ boutique.domain }}</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-number">{{ totalProducts }}</div>
+        <div class="stat-label">Produits suivis</div>
+    </div>
+
+    <div class="stat-card yellow">
+        <div class="stat-number">{{ lowStock }}</div>
+        <div class="stat-label">Stock faible</div>
+    </div>
+
+    <div class="stat-card red">
+        <div class="stat-number">{{ outOfStock }}</div>
+        <div class="stat-label">En rupture</div>
+    </div>
+</div>
+
+<div class="alerts-section">
+    <div class="alert-box">
+        <h2>🔴 Alertes Stock Faible</h2>
+        {% if lowStockProducts is empty %}
+            <p class="empty-message">Aucun produit en stock faible</p>
+        {% else %}
+            <div class="products-list">
+                {% for stock in lowStockProducts %}
+                    <div class="product-item {{ stock.quantity == 0 ? 'out-of-stock' : 'low-stock' }}">
+                        <div class="product-info">
+                            <span class="product-ref">{{ stock.reference }}</span>
+                            <span class="product-name">{{ stock.name }}</span>
+                        </div>
+                        <div class="product-quantity">
+                            <span class="quantity-badge {{ stock.quantity == 0 ? 'badge-danger' : 'badge-warning' }}">
+                                {{ stock.quantity }} unités
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'low'}) }}" class="view-all-link">
+                Voir tous les produits en stock faible →
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="alert-box">
+        <h2>🔥 Meilleures Ventes (7 derniers jours)</h2>
+        {% if topSellingProducts is empty %}
+            <p class="empty-message">Aucune vente détectée</p>
+        {% else %}
+            <div class="products-list">
+                {% for item in topSellingProducts %}
+                    <div class="product-item selling">
+                        <div class="product-info">
+                            <span class="product-ref">{{ item.stock.reference }}</span>
+                            <span class="product-name">{{ item.stock.name }}</span>
+                        </div>
+                        <div class="product-sales">
+                            <span class="sales-badge">
+                                {{ item.sold }} vendus
+                            </span>
+                            <span class="stock-remaining">{{ item.stock.quantity }} restants</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.boutique-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.boutique-header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-bottom: 5px;
+}
+
+.boutique-header p {
+    font-size: 16px;
+    color: var(--dark-text);
+    opacity: 0.6;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    text-align: center;
+}
+
+.stat-card.blue { border-top: 4px solid #3b82f6; }
+.stat-card.yellow { border-top: 4px solid #f59e0b; }
+.stat-card.red { border-top: 4px solid #ef4444; }
+
+.stat-number {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-bottom: 10px;
+}
+
+.stat-label {
+    font-size: 16px;
+    color: var(--dark-text);
+    opacity: 0.7;
+}
+
+.alerts-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 30px;
+}
+
+.alert-box {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.alert-box h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 20px;
+}
+
+.empty-message {
+    text-align: center;
+    padding: 40px;
+    color: var(--dark-text);
+    opacity: 0.5;
+}
+
+.products-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.product-item {
+    padding: 15px;
+    border-radius: 12px;
+    background: var(--surface-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.product-item.out-of-stock {
+    border-left: 4px solid #ef4444;
+}
+
+.product-item.low-stock {
+    border-left: 4px solid #f59e0b;
+}
+
+.product-item.selling {
+    border-left: 4px solid #10b981;
+}
+
+.product-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.product-ref {
+    font-size: 12px;
+    color: var(--dark-text);
+    opacity: 0.6;
+    font-weight: 600;
+}
+
+.product-name {
+    font-size: 15px;
+    color: var(--dark-text);
+    font-weight: 500;
+}
+
+.product-quantity, .product-sales {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.quantity-badge, .sales-badge {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.sales-badge {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.stock-remaining {
+    font-size: 12px;
+    color: var(--dark-text);
+    opacity: 0.6;
+}
+
+.view-all-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.view-all-link:hover {
+    text-decoration: underline;
+}
+</style>
+
+{% endblock %}

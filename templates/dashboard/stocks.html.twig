@@ -4,15 +4,44 @@
 
 {% block stylesheets %}
     <link rel="stylesheet" href="/css/stocks.css?v={{ 'now'|date('YmdHis') }}">
+    <style>
+        {% if boutique.primaryColor %}
+        :root {
+            --primary: {{ boutique.primaryColor }};
+        }
+
+        body {
+            background: linear-gradient(135deg, {{ boutique.primaryColor }} 0%, {{ boutique.primaryColor }}dd 100%);
+        }
+
+        body::before {
+            background:
+                radial-gradient(circle at 20% 50%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, {{ boutique.primaryColor }}26 0%, transparent 50%);
+        }
+        {% endif %}
+    </style>
 {% endblock %}
 
 {% block navbar %}
 <div class="container">
     <nav class="navbar">
-        <div class="navbar-brand">PrestaBoost</div>
+        <div class="navbar-brand">
+            {% if boutique.logoUrl %}
+                <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}" style="max-height: 40px;">
+            {% else %}
+                {{ boutique.name }}
+            {% endif %}
+        </div>
         <ul class="navbar-menu">
-            <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
-            <li><a href="{{ path('app_boutiques') }}">Mes Boutiques</a></li>
+            <li><a href="{{ path('app_dashboard') }}">← Mes Boutiques</a></li>
+            <li><a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}">Dashboard</a></li>
+            <li><a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="active">Stocks</a></li>
+            <li><a href="{{ path('app_boutique_settings', {id: boutique.id}) }}">Paramètres</a></li>
+            {% if app.user.isSuperAdmin() %}
+                <li><a href="{{ path('app_users') }}">Utilisateurs</a></li>
+            {% endif %}
             <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
         </ul>
     </nav>

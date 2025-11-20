@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Dashboard - PrestaBoost{% endblock %}
+{% block title %}Mes Boutiques - PrestaBoost{% endblock %}
 
 {% block stylesheets %}
     <link rel="stylesheet" href="/css/dashboard.css?v={{ 'now'|date('YmdHis') }}">
@@ -11,8 +11,10 @@
     <nav class="navbar">
         <div class="navbar-brand">PrestaBoost</div>
         <ul class="navbar-menu">
-            <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
-            <li><a href="{{ path('app_boutiques') }}">Mes Boutiques</a></li>
+            <li><a href="{{ path('app_dashboard') }}" class="active">Mes Boutiques</a></li>
+            {% if app.user.isSuperAdmin() %}
+                <li><a href="{{ path('app_users') }}">Utilisateurs</a></li>
+            {% endif %}
             <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
         </ul>
     </nav>
@@ -23,145 +25,164 @@
 
 <div class="welcome-section">
     <h1>Bienvenue, {{ app.user.firstName }} !</h1>
-    <p>Voici un aperçu de vos boutiques PrestaShop</p>
+    <p>Sélectionnez une boutique pour voir son dashboard</p>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-card pink">
-        <div class="stat-number">{{ totalBoutiques }}</div>
-        <div class="stat-label">Boutiques</div>
-    </div>
-
-    <div class="stat-card blue">
-        <div class="stat-number">{{ totalProducts }}</div>
-        <div class="stat-label">Produits suivis</div>
-    </div>
-
-    <div class="stat-card yellow">
-        <div class="stat-number">{{ lowStock }}</div>
-        <div class="stat-label">Stock faible</div>
-    </div>
-
-    <div class="stat-card red">
-        <div class="stat-number">{{ outOfStock }}</div>
-        <div class="stat-label">En rupture</div>
-    </div>
-</div>
-
-{% if lowStockProducts is not empty %}
-<div class="card" style="margin-bottom: 30px; border-left: 5px solid var(--pastel-peach);">
-    <h2 style="color: #ff6b6b; margin-bottom: 20px;">⚠️ Alertes Stock Faible</h2>
-    <p style="margin-bottom: 20px; color: var(--dark-text); opacity: 0.8;">
-        Produits nécessitant un réapprovisionnement urgent
-    </p>
-
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
-            <thead>
-                <tr style="background: var(--pastel-peach);">
-                    <th style="padding: 15px; text-align: left; font-weight: 600; border-radius: 15px 0 0 15px;">Boutique</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600;">Produit</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600;">Référence</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600;">Quantité</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600; border-radius: 0 15px 15px 0;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in lowStockProducts %}
-                <tr style="background: var(--white); transition: all 0.3s ease;">
-                    <td style="padding: 15px; border-radius: 15px 0 0 15px;">{{ item.boutique.name }}</td>
-                    <td style="padding: 15px;">{{ item.stock.name }}</td>
-                    <td style="padding: 15px;">{{ item.stock.reference ?? '-' }}</td>
-                    <td style="padding: 15px;">
-                        <span style="padding: 5px 15px; border-radius: 20px; font-weight: 600; {% if item.stock.quantity == 0 %}background: #FFB3B3;{% else %}background: var(--pastel-yellow);{% endif %}">
-                            {{ item.stock.quantity }}
-                        </span>
-                    </td>
-                    <td style="padding: 15px; border-radius: 0 15px 15px 0;">
-                        <a href="{{ path('app_boutique_stocks', {id: item.boutique.id, filter: 'low'}) }}" class="btn btn-primary" style="padding: 8px 15px; font-size: 14px;">
-                            Voir détails
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
-{% if topSellingProducts is not empty %}
-<div class="card" style="margin-bottom: 30px; border-left: 5px solid var(--pastel-green);">
-    <h2 style="color: #28a745; margin-bottom: 20px;">🔥 Top Produits Vendus</h2>
-    <p style="margin-bottom: 20px; color: var(--dark-text); opacity: 0.8;">
-        Produits les plus vendus sur les 7 derniers jours
-    </p>
-
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
-            <thead>
-                <tr style="background: var(--pastel-green);">
-                    <th style="padding: 15px; text-align: left; font-weight: 600; border-radius: 15px 0 0 15px;">Boutique</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600;">Produit</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600;">Référence</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600;">Vendus</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600;">Stock actuel</th>
-                    <th style="padding: 15px; text-align: left; font-weight: 600; border-radius: 0 15px 15px 0;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in topSellingProducts %}
-                <tr style="background: var(--white); transition: all 0.3s ease;">
-                    <td style="padding: 15px; border-radius: 15px 0 0 15px;">{{ item.boutique.name }}</td>
-                    <td style="padding: 15px;">{{ item.stock.name }}</td>
-                    <td style="padding: 15px;">{{ item.stock.reference ?? '-' }}</td>
-                    <td style="padding: 15px;">
-                        <span style="padding: 5px 15px; border-radius: 20px; font-weight: 600; background: var(--pastel-green); color: var(--dark-text);">
-                            -{{ item.sold }}
-                        </span>
-                    </td>
-                    <td style="padding: 15px;">{{ item.stock.quantity }}</td>
-                    <td style="padding: 15px; border-radius: 0 15px 15px 0;">
-                        <a href="{{ path('app_boutique_stocks', {id: item.boutique.id}) }}" class="btn btn-primary" style="padding: 8px 15px; font-size: 14px;">
-                            Voir détails
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-        <h2>Mes Boutiques</h2>
-        <a href="{{ path('app_boutique_new') }}" class="btn btn-primary">Ajouter une boutique</a>
-    </div>
-
-    {% if boutiques is empty %}
-        <div style="text-align: center; padding: 40px;">
-            <p style="font-size: 18px; color: var(--dark-text); opacity: 0.6; margin-bottom: 20px;">
-                Vous n'avez pas encore de boutique
-            </p>
-            <a href="{{ path('app_boutique_new') }}" class="btn btn-primary">Créer ma première boutique</a>
-        </div>
-    {% else %}
-        {% for boutique in boutiques %}
-            <div class="boutique-card">
-                <div class="boutique-header">
-                    <div class="boutique-name">{{ boutique.name }}</div>
-                </div>
-                <div class="boutique-domain">{{ boutique.domain }}</div>
-                <div class="boutique-actions">
-                    <a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="btn btn-primary">
-                        Voir les stocks
-                    </a>
-                    <a href="#" class="btn btn-secondary">Paramètres</a>
-                </div>
+<div class="boutiques-grid">
+    {% for boutique in boutiques %}
+        {% set boutiqueColor = boutique.primaryColor ?? '#10b981' %}
+        <a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}" class="boutique-card">
+            <div class="boutique-header" style="background: linear-gradient(135deg, {{ boutiqueColor }} 0%, {{ boutiqueColor }}dd 100%);">
+                {% if boutique.logoUrl %}
+                    <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}" class="boutique-logo">
+                {% else %}
+                    <div class="boutique-logo-placeholder">{{ boutique.name|slice(0, 2)|upper }}</div>
+                {% endif %}
             </div>
-        {% endfor %}
-    {% endif %}
+            <div class="boutique-body">
+                <h3>{{ boutique.name }}</h3>
+                <p class="boutique-domain">{{ boutique.domain }}</p>
+            </div>
+            <div class="boutique-footer">
+                <span class="btn-view" style="color: {{ boutiqueColor }};">Voir le dashboard →</span>
+            </div>
+        </a>
+    {% else %}
+        <div class="empty-state">
+            <h3>Aucune boutique</h3>
+            <p>Vous n'avez pas encore de boutique connectée</p>
+            {% if app.user.isSuperAdmin() %}
+                <a href="{{ path('app_boutique_new') }}" class="btn btn-primary">Créer ma première boutique</a>
+            {% endif %}
+        </div>
+    {% endfor %}
 </div>
+
+<style>
+.welcome-section {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.welcome-section h1 {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-bottom: 10px;
+}
+
+.welcome-section p {
+    font-size: 18px;
+    color: var(--dark-text);
+    opacity: 0.7;
+}
+
+.boutiques-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.boutique-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+}
+
+.boutique-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.boutique-header {
+    padding: 40px 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 150px;
+}
+
+.boutique-logo {
+    max-width: 120px;
+    max-height: 80px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.boutique-logo-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.boutique-body {
+    padding: 30px;
+    flex: 1;
+}
+
+.boutique-body h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 10px;
+}
+
+.boutique-domain {
+    font-size: 14px;
+    color: var(--dark-text);
+    opacity: 0.6;
+    margin: 0;
+}
+
+.boutique-footer {
+    padding: 20px 30px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.btn-view {
+    display: inline-block;
+    font-weight: 600;
+    font-size: 16px;
+    transition: opacity 0.3s ease;
+}
+
+.boutique-card:hover .btn-view {
+    opacity: 0.8;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 100px 20px;
+}
+
+.empty-state h3 {
+    font-size: 28px;
+    color: var(--dark-text);
+    margin-bottom: 15px;
+}
+
+.empty-state p {
+    font-size: 16px;
+    color: var(--dark-text);
+    opacity: 0.6;
+    margin-bottom: 30px;
+}
+</style>
+
 {% endblock %}

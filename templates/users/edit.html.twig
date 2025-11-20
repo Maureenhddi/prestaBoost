@@ -1,0 +1,164 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier un Utilisateur - PrestaBoost{% endblock %}
+
+{% block navbar %}
+<div class="container">
+    <nav class="navbar">
+        <div class="navbar-brand">PrestaBoost</div>
+        <ul class="navbar-menu">
+            <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
+            <li><a href="{{ path('app_boutiques') }}">Mes Boutiques</a></li>
+            <li><a href="{{ path('app_users') }}" class="active">Utilisateurs</a></li>
+            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
+        </ul>
+    </nav>
+</div>
+{% endblock %}
+
+{% block body %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .form-header h1 {
+        font-size: 32px;
+        color: var(--dark-text);
+        margin-bottom: 10px;
+    }
+
+    .form-header p {
+        color: var(--dark-text);
+        opacity: 0.7;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .form-actions .btn {
+        flex: 1;
+    }
+
+    .help-text {
+        font-size: 14px;
+        color: var(--dark-text);
+        opacity: 0.6;
+        margin-top: 5px;
+    }
+
+    .checkbox-group {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: var(--surface-light);
+        border-radius: 10px;
+    }
+
+    .checkbox-group label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+</style>
+
+<div class="form-container">
+    <div class="card">
+        <div class="form-header">
+            <h1>Modifier l'utilisateur</h1>
+            <p>{{ user.firstName }} {{ user.lastName }}</p>
+        </div>
+
+        <form method="post" action="{{ path('app_user_update', {id: user.id}) }}">
+            <div class="input-group">
+                <label for="firstName">Prénom</label>
+                <input type="text" id="firstName" name="firstName" required value="{{ user.firstName }}">
+            </div>
+
+            <div class="input-group">
+                <label for="lastName">Nom</label>
+                <input type="text" id="lastName" name="lastName" required value="{{ user.lastName }}">
+            </div>
+
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required value="{{ user.email }}">
+            </div>
+
+            <div class="input-group">
+                <label for="password">Nouveau mot de passe</label>
+                <input type="password" id="password" name="password" placeholder="Laisser vide pour ne pas changer">
+                <div class="help-text">Laissez ce champ vide si vous ne souhaitez pas changer le mot de passe</div>
+            </div>
+
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="isSuperAdmin" name="isSuperAdmin" value="1" {% if user.isSuperAdmin() %}checked{% endif %}>
+                    <span>Super Administrateur</span>
+                </label>
+                <p style="margin: 10px 0 0 30px; font-size: 14px; opacity: 0.7;">
+                    Les super administrateurs ont accès à toutes les boutiques et peuvent gérer les utilisateurs.
+                </p>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3 style="font-size: 18px; margin-bottom: 15px; color: var(--dark-text);">Accès aux boutiques</h3>
+                <p style="font-size: 14px; opacity: 0.7; margin-bottom: 15px;">
+                    Sélectionnez les boutiques auxquelles cet utilisateur aura accès et définissez son rôle pour chacune.
+                </p>
+
+                {% if boutiques is empty %}
+                    <div style="padding: 20px; background-color: var(--surface-light); border-radius: 10px; text-align: center;">
+                        <p style="opacity: 0.6; margin: 0;">Aucune boutique disponible</p>
+                    </div>
+                {% else %}
+                    {% set userBoutiques = {} %}
+                    {% for boutiqueUser in user.boutiqueUsers %}
+                        {% set userBoutiques = userBoutiques|merge({(boutiqueUser.boutique.id): boutiqueUser.role}) %}
+                    {% endfor %}
+
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        {% for boutique in boutiques %}
+                            {% set currentRole = userBoutiques[boutique.id] ?? null %}
+                            <div style="padding: 15px; background-color: var(--surface-light); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <strong style="display: block; margin-bottom: 5px;">{{ boutique.name }}</strong>
+                                    <small style="opacity: 0.7;">{{ boutique.domain }}</small>
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <select name="boutiques[]" style="padding: 8px 12px; border: 1px solid var(--surface-dark); border-radius: 8px; background: white;">
+                                        <option value="" {% if currentRole is null %}selected{% endif %}>Aucun accès</option>
+                                        <option value="{{ boutique.id }}:USER" {% if currentRole == 'USER' %}selected{% endif %}>Utilisateur</option>
+                                        <option value="{{ boutique.id }}:ADMIN" {% if currentRole == 'ADMIN' %}selected{% endif %}>Admin de la boutique</option>
+                                    </select>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-actions">
+                <a href="{{ path('app_users') }}" class="btn btn-secondary">Annuler</a>
+                <button type="submit" class="btn btn-primary">Mettre à jour</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -35,6 +35,9 @@ class Boutique
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $themeColor = null;
 
+    #[ORM\Column(length: 7, nullable: true)]
+    private ?string $primaryColor = null;
+
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $fontFamily = null;
 
@@ -139,6 +142,18 @@ class Boutique
     public function setThemeColor(?string $themeColor): static
     {
         $this->themeColor = $themeColor;
+
+        return $this;
+    }
+
+    public function getPrimaryColor(): ?string
+    {
+        return $this->primaryColor;
+    }
+
+    public function setPrimaryColor(?string $primaryColor): static
+    {
+        $this->primaryColor = $primaryColor;
 
         return $this;
     }

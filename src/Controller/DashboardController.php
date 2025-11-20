@@ -19,8 +19,7 @@ class DashboardController extends AbstractController
 {
     #[Route('/dashboard', name: 'app_dashboard')]
     public function index(
-        BoutiqueRepository $boutiqueRepository,
-        DailyStockRepository $dailyStockRepository
+        BoutiqueRepository $boutiqueRepository
     ): Response {
         $user = $this->getUser();
 
@@ -34,59 +33,75 @@ class DashboardController extends AbstractController
             }
         }
 
-        // Calculate global stats and alerts
+        return $this->render('dashboard/index.html.twig', [
+            'boutiques' => $boutiques,
+        ]);
+    }
+
+    #[Route('/boutique/{id}', name: 'app_boutique_dashboard')]
+    public function boutiqueDashboard(
+        int $id,
+        BoutiqueRepository $boutiqueRepository,
+        DailyStockRepository $dailyStockRepository,
+        BoutiqueAuthorizationService $authService
+    ): Response {
+        $boutique = $boutiqueRepository->find($id);
+
+        if (!$boutique) {
+            throw $this->createNotFoundException('Boutique non trouvée');
+        }
+
+        $user = $this->getUser();
+        $authService->denyAccessUnlessGranted($user, $boutique);
+
+        // Get latest stocks
+        $currentStocks = $dailyStockRepository->findLatestSnapshot($boutique);
+
+        // Get date for comparison (7 days ago)
+        $weekAgo = new \DateTimeImmutable('-7 days');
+        $weekAgoStocks = $dailyStockRepository->findSnapshotByDate($boutique, $weekAgo);
+
+        // Build comparison map for week ago
+        $weekAgoMap = [];
+        foreach ($weekAgoStocks as $stock) {
+            $weekAgoMap[$stock->getProductId()] = $stock->getQuantity();
+        }
+
+        // Calculate stats
         $totalProducts = 0;
         $outOfStock = 0;
         $lowStock = 0;
         $lowStockProducts = [];
         $topSellingProducts = [];
 
-        // Get date for comparison (7 days ago)
-        $weekAgo = new \DateTimeImmutable('-7 days');
+        foreach ($currentStocks as $stock) {
+            $totalProducts++;
+            $currentQty = $stock->getQuantity();
 
-        foreach ($boutiques as $boutique) {
-            $currentStocks = $dailyStockRepository->findLatestSnapshot($boutique);
-            $weekAgoStocks = $dailyStockRepository->findSnapshotByDate($boutique, $weekAgo);
-
-            // Build comparison map for week ago
-            $weekAgoMap = [];
-            foreach ($weekAgoStocks as $stock) {
-                $weekAgoMap[$stock->getProductId()] = $stock->getQuantity();
+            // Stats
+            if ($currentQty == 0) {
+                $outOfStock++;
+            } elseif ($currentQty < 10) {
+                $lowStock++;
+                $lowStockProducts[] = $stock;
             }
 
-            foreach ($currentStocks as $stock) {
-                $totalProducts++;
-                $currentQty = $stock->getQuantity();
-
-                // Stats
-                if ($currentQty == 0) {
-                    $outOfStock++;
-                } elseif ($currentQty < 10) {
-                    $lowStock++;
-                    $lowStockProducts[] = [
-                        'boutique' => $boutique,
+            // Calculate sales (negative variation = products sold)
+            $previousQty = $weekAgoMap[$stock->getProductId()] ?? null;
+            if ($previousQty !== null && $previousQty > $currentQty) {
+                $sold = $previousQty - $currentQty;
+                if ($sold > 0) {
+                    $topSellingProducts[] = [
                         'stock' => $stock,
+                        'sold' => $sold,
+                        'previousQty' => $previousQty,
                     ];
-                }
-
-                // Calculate sales (negative variation = products sold)
-                $previousQty = $weekAgoMap[$stock->getProductId()] ?? null;
-                if ($previousQty !== null && $previousQty > $currentQty) {
-                    $sold = $previousQty - $currentQty;
-                    if ($sold > 0) {
-                        $topSellingProducts[] = [
-                            'boutique' => $boutique,
-                            'stock' => $stock,
-                            'sold' => $sold,
-                            'previousQty' => $previousQty,
-                        ];
-                    }
                 }
             }
         }
 
         // Sort by quantity (most critical first)
-        usort($lowStockProducts, fn($a, $b) => $a['stock']->getQuantity() <=> $b['stock']->getQuantity());
+        usort($lowStockProducts, fn($a, $b) => $a->getQuantity() <=> $b->getQuantity());
 
         // Keep only top 10 most critical
         $lowStockProducts = array_slice($lowStockProducts, 0, 10);
@@ -97,9 +112,8 @@ class DashboardController extends AbstractController
         // Keep only top 10 best sellers
         $topSellingProducts = array_slice($topSellingProducts, 0, 10);
 
-        return $this->render('dashboard/index.html.twig', [
-            'boutiques' => $boutiques,
-            'totalBoutiques' => count($boutiques),
+        return $this->render('dashboard/boutique_dashboard.html.twig', [
+            'boutique' => $boutique,
             'totalProducts' => $totalProducts,
             'outOfStock' => $outOfStock,
             'lowStock' => $lowStock,
