@@ -35,7 +35,9 @@ class CollectPrestashopDataCommand extends Command
         $this
             ->addOption('boutique', 'b', InputOption::VALUE_OPTIONAL, 'Boutique ID to collect data for')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Collect data for all boutiques')
-            ->addOption('branding', null, InputOption::VALUE_NONE, 'Also collect branding data (logo, colors, etc.)');
+            ->addOption('branding', null, InputOption::VALUE_NONE, 'Also collect branding data (logo, colors, etc.)')
+            ->addOption('orders', 'o', InputOption::VALUE_NONE, 'Also collect orders data')
+            ->addOption('orders-days', null, InputOption::VALUE_OPTIONAL, 'Number of days to collect orders for', 30);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -45,6 +47,8 @@ class CollectPrestashopDataCommand extends Command
         $boutiqueId = $input->getOption('boutique');
         $collectAll = $input->getOption('all');
         $collectBranding = $input->getOption('branding');
+        $collectOrders = $input->getOption('orders');
+        $ordersDays = (int) $input->getOption('orders-days');
 
         // Determine which boutiques to process
         $boutiques = [];
@@ -93,6 +97,19 @@ class CollectPrestashopDataCommand extends Command
                         $io->info('Branding data collected successfully');
                     } else {
                         $io->warning('Could not collect branding data: ' . $brandingResult['error']);
+                    }
+                }
+
+                // Optionally collect orders data
+                if ($collectOrders) {
+                    $ordersResult = $this->collector->collectOrdersData($boutique, $ordersDays);
+                    if ($ordersResult['success']) {
+                        $io->info(sprintf(
+                            'Orders data collected successfully: %d orders saved',
+                            $ordersResult['saved_count']
+                        ));
+                    } else {
+                        $io->warning('Could not collect orders data: ' . $ordersResult['error']);
                     }
                 }
             } else {

@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Boutique;
 use App\Entity\DailyStock;
+use App\Entity\Order;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -291,5 +292,129 @@ class PrestaShopCollector
         }
 
         return null;
+    }
+
+    /**
+     * Collect orders data from PrestaShop API
+     */
+    public function collectOrdersData(Boutique $boutique, int $days = 30): array
+    {
+        $this->logger->info('Starting orders collection for boutique', [
+            'boutique_id' => $boutique->getId(),
+            'boutique_name' => $boutique->getName(),
+            'days' => $days
+        ]);
+
+        try {
+            // Calculate date range
+            $endDate = new \DateTimeImmutable();
+            $startDate = $endDate->modify("-{$days} days");
+
+            // Fetch orders
+            $orders = $this->fetchOrders($boutique, $startDate);
+            $this->logger->info('Orders fetched', ['count' => count($orders)]);
+
+            // Save to database
+            $savedCount = $this->saveOrdersData($boutique, $orders);
+            $this->logger->info('Orders data saved', ['count' => $savedCount]);
+
+            return [
+                'success' => true,
+                'orders_count' => count($orders),
+                'saved_count' => $savedCount
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Error collecting orders data', [
+                'boutique_id' => $boutique->getId(),
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Fetch orders from PrestaShop API
+     */
+    private function fetchOrders(Boutique $boutique, \DateTimeImmutable $startDate): array
+    {
+        $url = rtrim($boutique->getDomain(), '/') . '/api/orders';
+
+        $response = $this->httpClient->request('GET', $url, [
+            'auth_basic' => [$boutique->getApiKey(), ''],
+            'query' => [
+                'display' => '[id,reference,total_paid,current_state,payment,date_add]',
+                'date' => '1',
+                'filter[date_add]' => '[' . $startDate->format('Y-m-d') . ',]',
+                'output_format' => 'JSON'
+            ]
+        ]);
+
+        $data = $response->toArray();
+
+        // Handle PrestaShop API response format
+        if (isset($data['orders'])) {
+            return is_array($data['orders']) ? $data['orders'] : [$data['orders']];
+        }
+
+        return [];
+    }
+
+    /**
+     * Save orders data to database
+     */
+    private function saveOrdersData(Boutique $boutique, array $orders): int
+    {
+        $collectedAt = new \DateTimeImmutable();
+        $count = 0;
+
+        foreach ($orders as $orderData) {
+            // Check if order already exists
+            $existingOrder = $this->entityManager->getRepository(Order::class)
+                ->findOneBy([
+                    'boutique' => $boutique,
+                    'orderId' => $orderData['id']
+                ]);
+
+            if ($existingOrder) {
+                // Update existing order
+                $order = $existingOrder;
+            } else {
+                // Create new order
+                $order = new Order();
+                $order->setBoutique($boutique);
+                $order->setOrderId($orderData['id']);
+            }
+
+            // Set order data
+            $order->setReference($orderData['reference'] ?? null);
+            $order->setTotalPaid($orderData['total_paid'] ?? '0');
+            $order->setCurrentState($orderData['current_state'] ?? 'unknown');
+            $order->setPayment($orderData['payment'] ?? null);
+
+            // Parse order date
+            $orderDate = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $orderData['date_add']);
+            if ($orderDate === false) {
+                $orderDate = new \DateTimeImmutable();
+            }
+            $order->setOrderDate($orderDate);
+            $order->setCollectedAt($collectedAt);
+
+            $this->entityManager->persist($order);
+            $count++;
+
+            // Flush every 50 records to avoid memory issues
+            if ($count % 50 === 0) {
+                $this->entityManager->flush();
+            }
+        }
+
+        // Flush remaining records
+        $this->entityManager->flush();
+
+        return $count;
     }
 }

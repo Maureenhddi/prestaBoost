@@ -121,6 +121,38 @@
             {% endif %}
         </div>
     </div>
+
+    <div class="stat-card stat-success" id="revenue-card">
+        <div class="stat-icon">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-number" id="revenue-amount">--</div>
+            <div class="stat-label">Chiffre d'affaires</div>
+            <div class="stat-variation" id="revenue-variation" style="display: none;">
+                <span class="variation-arrow"></span>
+                <span class="variation-text"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="stat-card stat-info" id="orders-card">
+        <div class="stat-icon">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-number" id="orders-count">--</div>
+            <div class="stat-label">Commandes</div>
+            <div class="stat-variation" id="orders-variation" style="display: none;">
+                <span class="variation-arrow"></span>
+                <span class="variation-text"></span>
+            </div>
+        </div>
+    </div>
 </div>
 
 {% if lowStock > 0 or outOfStock > 0 %}
@@ -135,6 +167,30 @@
     </a>
 </div>
 {% endif %}
+
+<div class="insight-card" id="recent-orders-card" style="margin-bottom: 30px; display: none;">
+    <div class="insight-header">
+        <div class="insight-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+            </svg>
+        </div>
+        <div class="insight-title">
+            <h3>Commandes Récentes</h3>
+            <p>Dernières commandes enregistrées</p>
+        </div>
+    </div>
+
+    <div class="empty-state" id="orders-empty">
+        <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity: 0.2;">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+        </svg>
+        <p>Pas encore de commandes</p>
+        <span>Les commandes apparaîtront ici</span>
+    </div>
+
+    <div class="products-list" id="orders-list" style="display: none;"></div>
+</div>
 
 <div class="insights-section">
     <div class="insight-card insight-warning">
@@ -794,6 +850,174 @@
         margin-left: auto;
     }
 }
+
+.stat-card.stat-success .stat-icon {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.stat-card.stat-info .stat-icon {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.stat-variation {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.stat-variation.positive {
+    color: #059669;
+}
+
+.stat-variation.negative {
+    color: #dc2626;
+}
+
+.stat-variation.neutral {
+    color: #6b7280;
+}
+
+.variation-arrow {
+    font-size: 16px;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.order-item:hover {
+    background: var(--gray-50);
+}
+
+.order-info {
+    flex: 1;
+}
+
+.order-reference {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+}
+
+.order-date {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.order-amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const boutiqueId = {{ boutique.id }};
+    const comparePeriod = 'lastweek'; // You can make this dynamic later
+
+    // Fetch orders statistics
+    fetch(`/api/orders/boutique/${boutiqueId}/statistics?compare=${comparePeriod}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.error('Error fetching orders data:', data.error);
+                return;
+            }
+
+            // Update revenue card
+            const revenueAmount = document.getElementById('revenue-amount');
+            const revenueVariation = document.getElementById('revenue-variation');
+
+            revenueAmount.textContent = new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'EUR'
+            }).format(data.current.revenue);
+
+            if (data.variations.revenue !== 0) {
+                const variationClass = data.variations.revenue > 0 ? 'positive' : 'negative';
+                const arrow = data.variations.revenue > 0 ? '↑' : '↓';
+
+                revenueVariation.querySelector('.variation-arrow').textContent = arrow;
+                revenueVariation.querySelector('.variation-text').textContent =
+                    Math.abs(data.variations.revenue) + '% vs période précédente';
+                revenueVariation.className = 'stat-variation ' + variationClass;
+                revenueVariation.style.display = 'flex';
+            }
+
+            // Update orders count card
+            const ordersCount = document.getElementById('orders-count');
+            const ordersVariation = document.getElementById('orders-variation');
+
+            ordersCount.textContent = data.current.orderCount;
+
+            if (data.variations.orderCount !== 0) {
+                const variationClass = data.variations.orderCount > 0 ? 'positive' : 'negative';
+                const arrow = data.variations.orderCount > 0 ? '↑' : '↓';
+
+                ordersVariation.querySelector('.variation-arrow').textContent = arrow;
+                ordersVariation.querySelector('.variation-text').textContent =
+                    Math.abs(data.variations.orderCount) + '% vs période précédente';
+                ordersVariation.className = 'stat-variation ' + variationClass;
+                ordersVariation.style.display = 'flex';
+            }
+
+            // Update recent orders
+            const recentOrdersCard = document.getElementById('recent-orders-card');
+            const ordersEmpty = document.getElementById('orders-empty');
+            const ordersList = document.getElementById('orders-list');
+
+            if (data.recentOrders && data.recentOrders.length > 0) {
+                recentOrdersCard.style.display = 'block';
+                ordersEmpty.style.display = 'none';
+                ordersList.style.display = 'block';
+
+                ordersList.innerHTML = data.recentOrders.map(order => {
+                    const orderDate = new Date(order.orderDate);
+                    const formattedDate = orderDate.toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    const amount = parseFloat(order.totalPaid);
+                    const formattedAmount = new Intl.NumberFormat('fr-FR', {
+                        style: 'currency',
+                        currency: 'EUR'
+                    }).format(amount);
+
+                    return `
+                        <div class="order-item">
+                            <div class="order-info">
+                                <div class="order-reference">Commande #${order.reference || order.orderId}</div>
+                                <div class="order-date">${formattedDate} - ${order.payment || 'Non spécifié'}</div>
+                            </div>
+                            <div class="order-amount">${formattedAmount}</div>
+                        </div>
+                    `;
+                }).join('');
+            } else if (data.current.orderCount === 0) {
+                recentOrdersCard.style.display = 'block';
+                ordersEmpty.style.display = 'block';
+                ordersList.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching orders statistics:', error);
+        });
+});
+</script>
 
 {% endblock %}
