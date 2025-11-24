@@ -54,72 +54,28 @@ class DashboardController extends AbstractController
         $user = $this->getUser();
         $authService->denyAccessUnlessGranted($user, $boutique);
 
-        // Get latest stocks
-        $currentStocks = $dailyStockRepository->findLatestSnapshot($boutique);
+        // Get latest collection date once to avoid redundant queries
+        $latestDate = $dailyStockRepository->getLatestCollectionDate($boutique);
 
-        // Get date for comparison (7 days ago)
-        $weekAgo = new \DateTimeImmutable('-7 days');
-        $weekAgoStocks = $dailyStockRepository->findSnapshotByDate($boutique, $weekAgo);
+        // Get stats using optimized SQL queries (passing the date to avoid redundant queries)
+        $stats = $dailyStockRepository->getLatestSnapshotStats($boutique, $latestDate);
+        $lowStockProducts = $dailyStockRepository->findLowStockProducts($boutique, 10, $latestDate);
+        $topSellingProducts = $dailyStockRepository->findTopSellingProducts($boutique, 7, 10);
 
-        // Build comparison map for week ago
-        $weekAgoMap = [];
-        foreach ($weekAgoStocks as $stock) {
-            $weekAgoMap[$stock->getProductId()] = $stock->getQuantity();
-        }
-
-        // Calculate stats
-        $totalProducts = 0;
-        $outOfStock = 0;
-        $lowStock = 0;
-        $lowStockProducts = [];
-        $topSellingProducts = [];
-
-        foreach ($currentStocks as $stock) {
-            $totalProducts++;
-            $currentQty = $stock->getQuantity();
-
-            // Stats
-            if ($currentQty == 0) {
-                $outOfStock++;
-            } elseif ($currentQty < 10) {
-                $lowStock++;
-                $lowStockProducts[] = $stock;
-            }
-
-            // Calculate sales (negative variation = products sold)
-            $previousQty = $weekAgoMap[$stock->getProductId()] ?? null;
-            if ($previousQty !== null && $previousQty > $currentQty) {
-                $sold = $previousQty - $currentQty;
-                if ($sold > 0) {
-                    $topSellingProducts[] = [
-                        'stock' => $stock,
-                        'sold' => $sold,
-                        'previousQty' => $previousQty,
-                    ];
-                }
-            }
-        }
-
-        // Sort by quantity (most critical first)
-        usort($lowStockProducts, fn($a, $b) => $a->getQuantity() <=> $b->getQuantity());
-
-        // Keep only top 10 most critical
-        $lowStockProducts = array_slice($lowStockProducts, 0, 10);
-
-        // Sort top selling by quantity sold (descending)
-        usort($topSellingProducts, fn($a, $b) => $b['sold'] <=> $a['sold']);
-
-        // Keep only top 10 best sellers
-        $topSellingProducts = array_slice($topSellingProducts, 0, 10);
-
-        return $this->render('dashboard/boutique_dashboard.html.twig', [
+        $response = $this->render('dashboard/boutique_dashboard.html.twig', [
             'boutique' => $boutique,
-            'totalProducts' => $totalProducts,
-            'outOfStock' => $outOfStock,
-            'lowStock' => $lowStock,
+            'totalProducts' => $stats['totalProducts'],
+            'outOfStock' => $stats['outOfStock'],
+            'lowStock' => $stats['lowStock'],
             'lowStockProducts' => $lowStockProducts,
             'topSellingProducts' => $topSellingProducts,
         ]);
+
+        // Cache for 30 seconds to improve navigation speed
+        $response->setSharedMaxAge(30);
+        $response->headers->addCacheControlDirective('must-revalidate', true);
+
+        return $response;
     }
 
     #[Route('/boutiques', name: 'app_boutiques')]
@@ -181,95 +137,49 @@ class DashboardController extends AbstractController
 
         $page = max(1, $request->query->getInt('page', 1));
         $perPage = 50;
-        $comparePeriod = $request->query->get('compare', 'yesterday');
         $filter = $request->query->get('filter', 'all');
         $search = trim($request->query->get('search', ''));
+        $days = max(1, min(7, $request->query->getInt('days', 7)));
 
-        // Get ALL stocks (not paginated yet)
-        $allStocks = $dailyStockRepository->findLatestSnapshot($boutique);
+        // Get stocks with last N days history
+        $result = $dailyStockRepository->findStocksWithLast7Days(
+            $boutique,
+            $page,
+            $perPage,
+            $filter,
+            $search,
+            $days
+        );
 
-        // Get comparison data
-        $compareDate = $this->getCompareDate($comparePeriod);
-        $compareStocks = $compareDate ? $dailyStockRepository->findSnapshotByDate($boutique, $compareDate) : [];
+        // Get total count from repository result
+        $totalItems = $result['total_count'] ?? 0;
+        $totalPages = (int) ceil($totalItems / $perPage);
 
-        // Build comparison map
-        $compareMap = [];
-        foreach ($compareStocks as $stock) {
-            $compareMap[$stock->getProductId()] = $stock->getQuantity();
-        }
-
-        // Add variations to current stocks and calculate stats
-        $allStocksWithVariation = [];
+        // Simple stats count (for current page only)
         $stats = [
-            'total' => 0,
-            'outOfStock' => 0,
-            'lowStock' => 0,
-            'withChanges' => 0,
+            'total' => $totalItems,
+            'outOfStock' => count(array_filter($result['stocks'], fn($s) => $s['current_quantity'] == 0)),
+            'lowStock' => count(array_filter($result['stocks'], fn($s) => $s['current_quantity'] > 0 && $s['current_quantity'] < 10)),
         ];
 
-        foreach ($allStocks as $stock) {
-            $currentQty = $stock->getQuantity();
-            $previousQty = $compareMap[$stock->getProductId()] ?? null;
-            $variation = $previousQty !== null ? ($currentQty - $previousQty) : null;
-
-            $item = [
-                'stock' => $stock,
-                'variation' => $variation,
-                'variationPercent' => $previousQty !== null && $previousQty > 0
-                    ? round((($currentQty - $previousQty) / $previousQty) * 100, 1)
-                    : null
-            ];
-
-            // Calculate stats (always on ALL products)
-            $stats['total']++;
-            if ($currentQty == 0) $stats['outOfStock']++;
-            if ($currentQty > 0 && $currentQty < 10) $stats['lowStock']++;
-            if ($variation !== null && $variation != 0) $stats['withChanges']++;
-
-            // Apply filter
-            $shouldInclude = match($filter) {
-                'outofstock' => $currentQty == 0,
-                'low' => $currentQty > 0 && $currentQty < 10,
-                'changes' => $variation !== null && $variation != 0,
-                default => true, // 'all'
-            };
-
-            // Apply search filter
-            if ($search !== '') {
-                $searchLower = mb_strtolower($search);
-                $reference = mb_strtolower($stock->getReference() ?? '');
-                $name = mb_strtolower($stock->getName() ?? '');
-
-                if (!str_contains($reference, $searchLower) && !str_contains($name, $searchLower)) {
-                    $shouldInclude = false;
-                }
-            }
-
-            if ($shouldInclude) {
-                $allStocksWithVariation[] = $item;
-            }
-        }
-
-        // Calculate pagination on filtered results
-        $filteredCount = count($allStocksWithVariation);
-        $totalPages = (int) ceil($filteredCount / $perPage);
-
-        // Apply pagination to filtered results
-        $offset = ($page - 1) * $perPage;
-        $stocksWithVariation = array_slice($allStocksWithVariation, $offset, $perPage);
-
-        return $this->render('dashboard/stocks.html.twig', [
+        $response = $this->render('dashboard/stocks.html.twig', [
             'boutique' => $boutique,
-            'stocks' => $stocksWithVariation,
+            'stocksData' => $result,
             'currentPage' => $page,
             'totalPages' => $totalPages,
-            'totalItems' => $filteredCount,
+            'totalItems' => $totalItems,
             'perPage' => $perPage,
-            'comparePeriod' => $comparePeriod,
             'filter' => $filter,
             'stats' => $stats,
             'search' => $search,
+            'days' => $days,
         ]);
+
+        // Cache for 30 seconds
+        $response->setSharedMaxAge(30);
+        $response->headers->addCacheControlDirective('must-revalidate', true);
+
+        return $response;
     }
 
     #[Route('/boutiques/{boutiqueId}/stocks/{productId}/history', name: 'app_product_history')]
@@ -290,11 +200,32 @@ class DashboardController extends AbstractController
         $user = $this->getUser();
         $authService->denyAccessUnlessGranted($user, $boutique);
 
-        $period = $request->query->get('period', '30'); // 7, 30, 90 days
-        $days = (int) $period;
+        // Check if custom date range is provided
+        $startDate = $request->query->get('startDate');
+        $endDate = $request->query->get('endDate');
+        $period = $request->query->get('period', '30'); // 7, 30, 90 days or 'custom'
 
-        // Get product history
-        $history = $dailyStockRepository->findProductHistory($boutique, $productId, $days);
+        if ($startDate && $endDate && $period === 'custom') {
+            // Custom date range
+            try {
+                $start = new \DateTimeImmutable($startDate);
+                $end = new \DateTimeImmutable($endDate);
+                $history = $dailyStockRepository->findProductHistoryByDateRange($boutique, $productId, $start, $end);
+            } catch (\Exception $e) {
+                // Invalid dates, fallback to 30 days
+                $period = '30';
+                $days = 30;
+                $history = $dailyStockRepository->findProductHistory($boutique, $productId, $days);
+                $startDate = null;
+                $endDate = null;
+            }
+        } else {
+            // Predefined period
+            $days = (int) $period;
+            $history = $dailyStockRepository->findProductHistory($boutique, $productId, $days);
+            $startDate = null;
+            $endDate = null;
+        }
 
         // Format history for JSON serialization
         $historyData = array_map(function($stock) {
@@ -312,6 +243,8 @@ class DashboardController extends AbstractController
             'productId' => $productId,
             'history' => $historyData,
             'period' => $period,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
         ]);
     }
 

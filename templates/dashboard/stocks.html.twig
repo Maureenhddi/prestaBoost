@@ -38,6 +38,7 @@
             <li><a href="{{ path('app_dashboard') }}">← Mes Boutiques</a></li>
             <li><a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}">Dashboard</a></li>
             <li><a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="active">Stocks</a></li>
+            <li><a href="{{ path('app_boutique_orders', {id: boutique.id}) }}">Commandes</a></li>
             <li><a href="{{ path('app_boutique_settings', {id: boutique.id}) }}">Paramètres</a></li>
             {% if app.user.isSuperAdmin() %}
                 <li><a href="{{ path('app_users') }}">Utilisateurs</a></li>
@@ -60,39 +61,41 @@
 
 <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">Stocks actuels</h2>
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <label style="margin: 0; font-weight: 600; font-size: 0.875rem;">Comparer avec:</label>
-            <select id="comparePeriod" class="filter-select">
-                <option value="yesterday" {{ comparePeriod == 'yesterday' ? 'selected' : '' }}>Hier</option>
-                <option value="lastweek" {{ comparePeriod == 'lastweek' ? 'selected' : '' }}>Semaine dernière</option>
-                <option value="lastmonth" {{ comparePeriod == 'lastmonth' ? 'selected' : '' }}>Mois dernier</option>
+        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">Évolution des stocks</h2>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <label for="daysSelector" style="font-weight: 600; color: var(--gray-700); font-size: 0.875rem;">Afficher :</label>
+            <select id="daysSelector"
+                    style="padding: 0.5rem 1rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); background: white; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
+                <option value="1" {{ days == 1 ? 'selected' : '' }}>1 jour</option>
+                <option value="2" {{ days == 2 ? 'selected' : '' }}>2 jours</option>
+                <option value="3" {{ days == 3 ? 'selected' : '' }}>3 jours</option>
+                <option value="4" {{ days == 4 ? 'selected' : '' }}>4 jours</option>
+                <option value="5" {{ days == 5 ? 'selected' : '' }}>5 jours</option>
+                <option value="6" {{ days == 6 ? 'selected' : '' }}>6 jours</option>
+                <option value="7" {{ days == 7 ? 'selected' : '' }}>7 jours</option>
             </select>
         </div>
     </div>
 
     <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'all', search: search}) }}"
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'all', search: search, days: days}) }}"
            class="filter-btn {{ filter == 'all' ? 'active' : '' }}">
             Tous ({{ stats.total }})
         </a>
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'changes', search: search}) }}"
-           class="filter-btn {{ filter == 'changes' ? 'active' : '' }}">
-            Avec changements ({{ stats.withChanges }})
-        </a>
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'low', search: search}) }}"
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'low', search: search, days: days}) }}"
            class="filter-btn {{ filter == 'low' ? 'active' : '' }}">
             Stock faible ({{ stats.lowStock }})
         </a>
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, compare: comparePeriod, filter: 'outofstock', search: search}) }}"
+        <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'outofstock', search: search, days: days}) }}"
            class="filter-btn {{ filter == 'outofstock' ? 'active' : '' }}">
             Rupture ({{ stats.outOfStock }})
         </a>
     </div>
 
     <form method="get" action="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="search-bar">
-        <input type="hidden" name="compare" value="{{ comparePeriod }}">
         <input type="hidden" name="filter" value="{{ filter }}">
+        <input type="hidden" name="days" value="{{ days }}">
         <input type="text"
                name="search"
                id="productSearch"
@@ -107,7 +110,7 @@
         </p>
     </div>
 
-    {% if stocks is empty %}
+    {% if stocksData.stocks is empty %}
         <div class="empty-state">
             <h3>Aucun stock disponible</h3>
             <p>Les données de stock pour cette boutique n'ont pas encore été collectées.</p>
@@ -120,48 +123,35 @@
                     <tr>
                         <th>Référence</th>
                         <th>Nom du produit</th>
-                        <th>Quantité</th>
-                        <th>Variation</th>
-                        <th>État</th>
-                        <th>Dernière mise à jour</th>
-                        <th>Actions</th>
+                        {% for date in stocksData.dates %}
+                            <th style="text-align: center;">{{ date.label }}</th>
+                        {% endfor %}
+                        <th style="text-align: center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in stocks %}
-                        {% set stock = item.stock %}
-                        {% set variation = item.variation %}
+                    {% for stock in stocksData.stocks %}
                         <tr>
                             <td><strong>{{ stock.reference ?? '-' }}</strong></td>
                             <td>{{ stock.name }}</td>
-                            <td>{{ stock.quantity }}</td>
-                            <td>
-                                {% if variation is not null %}
-                                    {% if variation > 0 %}
-                                        <span style="color: #28a745; font-weight: 600;">🔺 +{{ variation }}</span>
-                                    {% elseif variation < 0 %}
-                                        <span style="color: #dc3545; font-weight: 600;">🔻 {{ variation }}</span>
+                            {% for i in 0..(stocksData.dates|length - 1) %}
+                                {% set quantity = attribute(stock, 'day_' ~ i ~ '_quantity') %}
+                                <td style="text-align: center;">
+                                    {% if quantity is not null %}
+                                        {% if quantity == 0 %}
+                                            <span style="color: #dc3545; font-weight: 600;">{{ quantity }}</span>
+                                        {% elseif quantity < 10 %}
+                                            <span style="color: #f59e0b; font-weight: 600;">{{ quantity }}</span>
+                                        {% else %}
+                                            <span style="color: #10b981; font-weight: 600;">{{ quantity }}</span>
+                                        {% endif %}
                                     {% else %}
-                                        <span style="color: var(--dark-text); opacity: 0.6;">➡️ 0</span>
+                                        <span style="opacity: 0.3;">-</span>
                                     {% endif %}
-                                {% else %}
-                                    <span style="opacity: 0.4;">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if stock.quantity == 0 %}
-                                    <span class="stock-badge stock-out">Rupture</span>
-                                {% elseif stock.quantity < 10 %}
-                                    <span class="stock-badge stock-low">Stock faible</span>
-                                {% elseif stock.quantity < 50 %}
-                                    <span class="stock-badge stock-medium">Stock moyen</span>
-                                {% else %}
-                                    <span class="stock-badge stock-high">En stock</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ stock.collectedAt|date('d/m/Y H:i') }}</td>
-                            <td>
-                                <a href="{{ path('app_product_history', {boutiqueId: boutique.id, productId: stock.productId}) }}"
+                                </td>
+                            {% endfor %}
+                            <td style="text-align: center;">
+                                <a href="{{ path('app_product_history', {boutiqueId: boutique.id, productId: stock.product_id}) }}"
                                    class="btn-chart"
                                    title="Voir l'historique">
                                     📈
@@ -176,10 +166,10 @@
         {% if totalPages > 1 %}
         <div class="pagination">
             {% if currentPage > 1 %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: 1, compare: comparePeriod, filter: filter, search: search}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: 1, filter: filter, search: search, days: days}) }}" class="pagination-btn">
                     &laquo; Première
                 </a>
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, compare: comparePeriod, filter: filter, search: search}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, filter: filter, search: search, days: days}) }}" class="pagination-btn">
                     &lsaquo; Précédente
                 </a>
             {% endif %}
@@ -189,10 +179,10 @@
             </span>
 
             {% if currentPage < totalPages %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, compare: comparePeriod, filter: filter, search: search}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, filter: filter, search: search, days: days}) }}" class="pagination-btn">
                     Suivante &rsaquo;
                 </a>
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: totalPages, compare: comparePeriod, filter: filter, search: search}) }}" class="pagination-btn">
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: totalPages, filter: filter, search: search, days: days}) }}" class="pagination-btn">
                     Dernière &raquo;
                 </a>
             {% endif %}
@@ -228,14 +218,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Gérer le changement de période de comparaison
-    const comparePeriodSelect = document.getElementById('comparePeriod');
-    if (comparePeriodSelect) {
-        comparePeriodSelect.addEventListener('change', function() {
+    // Handle days selector change
+    const daysSelector = document.getElementById('daysSelector');
+    if (daysSelector) {
+        daysSelector.addEventListener('change', function() {
             const url = new URL(window.location.href);
-            url.searchParams.set('compare', this.value);
+            url.searchParams.set('days', this.value);
             url.searchParams.delete('page'); // Reset pagination
-            console.log('Redirecting to:', url.href); // Debug
             window.location.href = url.href;
         });
     }
