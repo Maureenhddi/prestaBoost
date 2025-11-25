@@ -1,0 +1,582 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Analyses - {{ boutique.name }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="/css/dashboard.css?v={{ 'now'|date('YmdHis') }}">
+    <style>
+        {% if boutique.primaryColor %}
+        :root {
+            --primary: {{ boutique.primaryColor }};
+        }
+        body {
+            background: linear-gradient(135deg, {{ boutique.primaryColor }} 0%, {{ boutique.primaryColor }}dd 100%);
+        }
+        body::before {
+            background:
+                radial-gradient(circle at 20% 50%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, {{ boutique.primaryColor }}26 0%, transparent 50%);
+        }
+        {% endif %}
+
+        .filters-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 24px 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-filter {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-filter.primary {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-filter.secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .btn-filter.secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .products-table-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .table-scroll-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            max-width: 100%;
+            position: relative;
+        }
+
+        /* Scroll indicators */
+        .table-scroll-wrapper::before,
+        .table-scroll-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 20px;
+            width: 40px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .table-scroll-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent);
+        }
+
+        .table-scroll-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.1), transparent);
+        }
+
+        .table-scroll-wrapper.scrolled-left::before {
+            opacity: 1;
+        }
+
+        .table-scroll-wrapper.scrolled-right::after {
+            opacity: 1;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar {
+            height: 12px;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 6px;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 6px;
+            border: 2px solid var(--gray-100);
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+            opacity: 0.8;
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        /* Zebra striping */
+        .products-table tbody tr:nth-child(even) {
+            background: rgba(249, 250, 251, 0.5);
+        }
+
+        .products-table thead {
+            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+        }
+
+        .products-table th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gray-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--gray-700);
+        }
+
+        .sortable-header:hover {
+            color: var(--primary);
+        }
+
+        .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            font-size: 10px;
+            line-height: 1;
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
+
+        .sortable-header:hover .sort-icon {
+            opacity: 0.6;
+        }
+
+        .sort-icon.active {
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        .sort-icon .sort-up,
+        .sort-icon .sort-down {
+            display: block;
+            height: 6px;
+        }
+
+        .products-table tbody tr {
+            border-bottom: 1px solid var(--gray-200);
+            transition: all 0.2s ease;
+        }
+
+        .products-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .products-table td {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: var(--gray-900);
+        }
+
+        .product-name {
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .product-reference {
+            font-size: 12px;
+            color: var(--gray-600);
+            margin-top: 2px;
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .rank-badge.top-1 {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+        }
+
+        .rank-badge.top-2 {
+            background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%);
+            color: white;
+        }
+
+        .rank-badge.top-3 {
+            background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+            color: white;
+        }
+
+        .rank-badge.other {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .empty-state {
+            padding: 80px 30px;
+            text-align: center;
+        }
+
+        .empty-state svg {
+            opacity: 0.2;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+    </style>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            {% if boutique.logoUrl %}
+                <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}">
+            {% endif %}
+            <span>{{ boutique.name }}</span>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <ul class="sidebar-menu">
+            <li>
+                <a href="{{ path('app_dashboard') }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Mes Boutiques</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <span>Stocks</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_orders', {id: boutique.id}) }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                    </svg>
+                    <span>Commandes</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_analytics', {id: boutique.id}) }}" class="active">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span>Analyses</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_settings', {id: boutique.id}) }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Paramètres</span>
+                </a>
+            </li>
+            {% if app.user.isSuperAdmin() %}
+            <li>
+                <a href="{{ path('app_users') }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span>Utilisateurs</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ path('app_logout') }}">
+            <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            <span>Déconnexion</span>
+        </a>
+    </div>
+</div>
+
+<!-- Mobile sidebar toggle -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">
+    <div class="sidebar-toggle-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</button>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    sidebar.classList.toggle('open');
+    mainContent.classList.toggle('sidebar-open');
+}
+</script>
+{% endblock %}
+
+{% block body %}
+
+<div class="dashboard-header" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 24px; padding: 30px 40px; margin-bottom: 30px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);">
+    <div style="display: flex; align-items: center; gap: 20px;">
+        {% if boutique.logoUrl %}
+            <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}" style="max-height: 50px;">
+        {% endif %}
+        <div>
+            <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 4px;">Analyses</h1>
+            <p style="color: var(--gray-600); margin: 0;">{{ boutique.name }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="filters-card" style="margin-bottom: 20px;">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Période</h3>
+    <form method="get" id="periodForm">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+            <button type="button" class="btn-filter {{ period == '7' and not startDateStr ? 'primary' : 'secondary' }}" onclick="selectPeriod('7')">
+                7 jours
+            </button>
+            <button type="button" class="btn-filter {{ period == '30' and not startDateStr ? 'primary' : 'secondary' }}" onclick="selectPeriod('30')">
+                30 jours
+            </button>
+            <button type="button" class="btn-filter {{ period == '90' and not startDateStr ? 'primary' : 'secondary' }}" onclick="selectPeriod('90')">
+                90 jours
+            </button>
+            <button type="button" class="btn-filter {{ period == 'custom' or startDateStr ? 'primary' : 'secondary' }}" onclick="toggleCustomDates()">
+                📅 Période personnalisée
+            </button>
+        </div>
+
+        <div id="customDatesContainer" style="display: {{ startDateStr ? 'flex' : 'none' }}; gap: 12px; flex-wrap: wrap; padding: 16px; background: var(--gray-50); border-radius: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--gray-700);">Date de début</label>
+                <input type="date" name="startDate" id="startDate" value="{{ startDateStr }}" style="padding: 8px 12px; border: 2px solid var(--gray-300); border-radius: 8px;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--gray-700);">Date de fin</label>
+                <input type="date" name="endDate" id="endDate" value="{{ endDateStr }}" style="padding: 8px 12px; border: 2px solid var(--gray-300); border-radius: 8px;">
+            </div>
+            <div style="display: flex; align-items: flex-end; gap: 8px;">
+                <button type="submit" class="btn-filter primary">Appliquer</button>
+                <a href="{{ path('app_boutique_analytics', {id: boutique.id, reset: 1}) }}" class="btn-filter secondary">Réinitialiser</a>
+            </div>
+        </div>
+
+        <input type="hidden" name="period" id="periodInput" value="{{ period }}">
+    </form>
+</div>
+
+<div class="products-table-card">
+    <div style="padding: 24px 30px; border-bottom: 1px solid var(--gray-200);">
+        <h2 style="font-size: 20px; font-weight: 700; color: var(--gray-900); margin: 0;">Produits les plus commandés</h2>
+        <p style="font-size: 14px; color: var(--gray-600); margin: 8px 0 0 0;">
+            Du {{ startDate|date('d/m/Y') }} au {{ endDate|date('d/m/Y') }}
+        </p>
+    </div>
+
+    {% if topProducts is empty %}
+        <div class="empty-state">
+            <svg width="80" height="80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <h3>Aucune donnée</h3>
+            <p>Aucune commande trouvée pour cette période</p>
+        </div>
+    {% else %}
+        <div class="table-scroll-wrapper">
+        <table class="products-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">Rang</th>
+                    <th>Produit</th>
+                    <th style="text-align: right;">
+                        <a href="{{ path('app_boutique_analytics', {id: boutique.id, period: period, startDate: startDateStr, endDate: endDateStr, sort: 'quantity', order: (sort == 'quantity' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            Quantité vendue
+                            <span class="sort-icon {{ sort == 'quantity' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'quantity' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'quantity' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                    <th style="text-align: right;">
+                        <a href="{{ path('app_boutique_analytics', {id: boutique.id, period: period, startDate: startDateStr, endDate: endDateStr, sort: 'orderCount', order: (sort == 'orderCount' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            Nb commandes
+                            <span class="sort-icon {{ sort == 'orderCount' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'orderCount' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'orderCount' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                    <th style="text-align: right;">
+                        <a href="{{ path('app_boutique_analytics', {id: boutique.id, period: period, startDate: startDateStr, endDate: endDateStr, sort: 'revenue', order: (sort == 'revenue' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            CA généré
+                            <span class="sort-icon {{ sort == 'revenue' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'revenue' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'revenue' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                    <th style="text-align: right;">
+                        <a href="{{ path('app_boutique_analytics', {id: boutique.id, period: period, startDate: startDateStr, endDate: endDateStr, sort: 'avgPrice', order: (sort == 'avgPrice' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            Prix moyen
+                            <span class="sort-icon {{ sort == 'avgPrice' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'avgPrice' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'avgPrice' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for index, product in topProducts %}
+                    {% set rank = index + 1 %}
+                    {% set rankClass = 'other' %}
+                    {% if rank == 1 %}
+                        {% set rankClass = 'top-1' %}
+                    {% elseif rank == 2 %}
+                        {% set rankClass = 'top-2' %}
+                    {% elseif rank == 3 %}
+                        {% set rankClass = 'top-3' %}
+                    {% endif %}
+                    <tr>
+                        <td>
+                            <span class="rank-badge {{ rankClass }}">{{ rank }}</span>
+                        </td>
+                        <td>
+                            <div class="product-name">{{ product.productName }}</div>
+                            <div class="product-reference">Réf: {{ product.productReference }}</div>
+                        </td>
+                        <td style="text-align: right; font-weight: 700; font-size: 16px;">
+                            {{ product.totalQuantity }}
+                        </td>
+                        <td style="text-align: right; color: var(--gray-600);">
+                            {{ product.orderCount }}
+                        </td>
+                        <td style="text-align: right; font-weight: 700; color: #10b981;">
+                            {{ product.totalRevenue|number_format(2, ',', ' ') }} €
+                        </td>
+                        <td style="text-align: right; color: var(--gray-600);">
+                            {{ product.avgPrice|number_format(2, ',', ' ') }} €
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableScrollWrapper = document.querySelector('.table-scroll-wrapper');
+    if (tableScrollWrapper) {
+        function updateScrollIndicators() {
+            const scrollLeft = tableScrollWrapper.scrollLeft;
+            const scrollWidth = tableScrollWrapper.scrollWidth;
+            const clientWidth = tableScrollWrapper.clientWidth;
+            const maxScroll = scrollWidth - clientWidth;
+
+            if (scrollLeft > 10) {
+                tableScrollWrapper.classList.add('scrolled-left');
+            } else {
+                tableScrollWrapper.classList.remove('scrolled-left');
+            }
+
+            if (scrollLeft < maxScroll - 10) {
+                tableScrollWrapper.classList.add('scrolled-right');
+            } else {
+                tableScrollWrapper.classList.remove('scrolled-right');
+            }
+        }
+
+        tableScrollWrapper.addEventListener('scroll', updateScrollIndicators);
+        updateScrollIndicators();
+        window.addEventListener('resize', updateScrollIndicators);
+    }
+});
+
+function selectPeriod(days) {
+    // Clear custom dates
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+    document.getElementById('periodInput').value = days;
+    // Hide custom dates container
+    document.getElementById('customDatesContainer').style.display = 'none';
+    // Submit form
+    document.getElementById('periodForm').submit();
+}
+
+function toggleCustomDates() {
+    const container = document.getElementById('customDatesContainer');
+    const isVisible = container.style.display !== 'none';
+    container.style.display = isVisible ? 'none' : 'flex';
+
+    if (!isVisible) {
+        // Clear period input when showing custom dates
+        document.getElementById('periodInput').value = 'custom';
+    }
+}
+</script>
+{% endblock %}

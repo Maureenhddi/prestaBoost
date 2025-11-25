@@ -13,8 +13,10 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class DailyStockRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private OrderRepository $orderRepository
+    ) {
         parent::__construct($registry, DailyStock::class);
     }
 
@@ -403,13 +405,16 @@ class DailyStockRepository extends ServiceEntityRepository
             return [];
         }
 
+        $lowStockThreshold = $boutique->getLowStockThreshold();
+
         return $this->createQueryBuilder('ds')
             ->where('ds.boutique = :boutique')
             ->andWhere('ds.collectedAt = :latestDate')
             ->andWhere('ds.quantity > 0')
-            ->andWhere('ds.quantity < 10')
+            ->andWhere('ds.quantity < :threshold')
             ->setParameter('boutique', $boutique)
             ->setParameter('latestDate', $latestDate)
+            ->setParameter('threshold', $lowStockThreshold)
             ->orderBy('ds.quantity', 'ASC')
             ->setMaxResults($limit)
             ->getQuery()
@@ -474,19 +479,17 @@ class DailyStockRepository extends ServiceEntityRepository
     }
 
     /**
-     * Get stocks with last N days history for each product
-     * Returns product info with stock quantities for each of the last N days
-     *
-     * Optimized version using 2-step approach to avoid slow JOINs on large tables
+     * Get stock statistics with filtering and search
+     * Returns stats based on active filters (stock level filters + search)
      */
-    public function findStocksWithLast7Days(
+    public function getFilteredStockStats(
         Boutique $boutique,
-        int $page = 1,
-        int $perPage = 50,
-        ?string $filter = 'all',
+        array $filters = [],
         ?string $search = null,
-        int $days = 7
+        ?int $lowStockThreshold = null
     ): array {
+        // Use boutique's low stock threshold if not provided
+        $lowStockThreshold = $lowStockThreshold ?? $boutique->getLowStockThreshold();
         $conn = $this->getEntityManager()->getConnection();
 
         // Get the latest collection date
@@ -497,31 +500,181 @@ class DailyStockRepository extends ServiceEntityRepository
         ', ['boutique_id' => $boutique->getId()]);
 
         if (!$latestDate) {
-            return ['stocks' => [], 'dates' => [], 'latest_date' => null];
+            return ['total' => 0, 'outOfStock' => 0, 'lowStock' => 0, 'inStock' => 0];
         }
 
-        $latestDateTime = new \DateTimeImmutable($latestDate);
+        // Build WHERE clause for search
+        $searchClause = '';
+        $params = [
+            'boutique_id' => $boutique->getId(),
+            'latest_date' => $latestDate
+        ];
+
+        if ($search) {
+            $searchClause = " AND (name ILIKE :search OR reference ILIKE :search)";
+            $params['search'] = '%' . $search . '%';
+        }
+
+        // Build WHERE clause for stock level filters
+        $filterClause = '';
+        if (!empty($filters)) {
+            $stockConditions = [];
+            foreach ($filters as $filter) {
+                if ($filter === 'outofstock') {
+                    $stockConditions[] = 'quantity = 0';
+                } elseif ($filter === 'low') {
+                    $stockConditions[] = "(quantity > 0 AND quantity < {$lowStockThreshold})";
+                } elseif ($filter === 'instock') {
+                    $stockConditions[] = "quantity > 0";
+                }
+            }
+            if (!empty($stockConditions)) {
+                $filterClause = ' AND (' . implode(' OR ', $stockConditions) . ')';
+            }
+        }
+
+        // Get statistics based on active filters
+        $statsSql = "
+            SELECT
+                COUNT(DISTINCT product_id) as total,
+                SUM(CASE WHEN quantity >= {$lowStockThreshold} THEN 1 ELSE 0 END) as in_stock,
+                SUM(CASE WHEN quantity = 0 THEN 1 ELSE 0 END) as out_of_stock,
+                SUM(CASE WHEN quantity > 0 AND quantity < {$lowStockThreshold} THEN 1 ELSE 0 END) as low_stock
+            FROM daily_stocks
+            WHERE boutique_id = :boutique_id
+                AND collected_at = :latest_date
+                {$searchClause}
+                {$filterClause}
+        ";
+
+        $statsResult = $conn->fetchAssociative($statsSql, $params);
+
+        return [
+            'total' => (int) ($statsResult['total'] ?? 0),
+            'inStock' => (int) ($statsResult['in_stock'] ?? 0),
+            'outOfStock' => (int) ($statsResult['out_of_stock'] ?? 0),
+            'lowStock' => (int) ($statsResult['low_stock'] ?? 0),
+        ];
+    }
+
+    /**
+     * Get stocks with last N days history for each product
+     * Returns product info with stock quantities for each of the last N days
+     *
+     * Optimized version using 2-step approach to avoid slow JOINs on large tables
+     */
+    public function findStocksWithLast7Days(
+        Boutique $boutique,
+        int $page = 1,
+        int $perPage = 50,
+        array $filters = [],
+        ?string $search = null,
+        int $days = 7,
+        ?string $category = null,
+        ?\DateTimeImmutable $startDate = null,
+        ?\DateTimeImmutable $endDate = null,
+        bool $showSales = false,
+        bool $showRevenue = false,
+        string $sort = 'name',
+        string $order = 'asc',
+        ?int $excludeOutOfStockDays = null,
+        ?int $lowStockThreshold = null
+    ): array {
+        // Use boutique's low stock threshold if not provided
+        $lowStockThreshold = $lowStockThreshold ?? $boutique->getLowStockThreshold();
+        $conn = $this->getEntityManager()->getConnection();
+
+        // Determine which date to use for filtering
+        $useCustomDateRange = $startDate && $endDate;
+
+        // Format dates once if custom range is used
+        $startDateFormatted = null;
+        $endDateFormatted = null;
+        if ($useCustomDateRange) {
+            $startDateFormatted = $startDate->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+            $endDateFormatted = $endDate->setTime(23, 59, 59)->format('Y-m-d H:i:s');
+        }
+
+        if ($useCustomDateRange) {
+            // Get the latest collection date within the custom date range
+            $latestDate = $conn->fetchOne('
+                SELECT MAX(collected_at)
+                FROM daily_stocks
+                WHERE boutique_id = :boutique_id
+                    AND collected_at >= :start_date
+                    AND collected_at <= :end_date
+            ', [
+                'boutique_id' => $boutique->getId(),
+                'start_date' => $startDateFormatted,
+                'end_date' => $endDateFormatted
+            ]);
+
+            if (!$latestDate) {
+                return ['stocks' => [], 'dates' => [], 'latest_date' => null, 'total_count' => 0];
+            }
+
+            $latestDateTime = new \DateTimeImmutable($latestDate);
+        } else {
+            // Get the latest collection date
+            $latestDate = $conn->fetchOne('
+                SELECT MAX(collected_at)
+                FROM daily_stocks
+                WHERE boutique_id = :boutique_id
+            ', ['boutique_id' => $boutique->getId()]);
+
+            if (!$latestDate) {
+                return ['stocks' => [], 'dates' => [], 'latest_date' => null, 'total_count' => 0];
+            }
+
+            $latestDateTime = new \DateTimeImmutable($latestDate);
+        }
+
         $offset = ($page - 1) * $perPage;
 
         // Build WHERE clauses for filters
         $filterClause = '';
         $params = [
             'boutique_id' => $boutique->getId(),
-            'latest_date' => $latestDate,
             'limit' => $perPage,
             'offset' => $offset
         ];
+
+        // Add date parameters - latest_date is always needed for the main query
+        $params['latest_date'] = $latestDate;
+
+        // Add custom date range parameters if needed (for history queries)
+        if ($useCustomDateRange) {
+            $params['start_date'] = $startDateFormatted;
+            $params['end_date'] = $endDateFormatted;
+        }
 
         if ($search) {
             $filterClause .= " AND (name ILIKE :search OR reference ILIKE :search)";
             $params['search'] = '%' . $search . '%';
         }
 
-        // Apply stock level filter
-        if ($filter === 'outofstock') {
-            $filterClause .= " AND quantity = 0";
-        } elseif ($filter === 'low') {
-            $filterClause .= " AND quantity > 0 AND quantity < 10";
+        // Apply category filter
+        if ($category) {
+            $filterClause .= " AND category = :category";
+            $params['category'] = $category;
+        }
+
+        // Apply stock level filters (multiple selection)
+        if (!empty($filters)) {
+            $stockConditions = [];
+            foreach ($filters as $filter) {
+                if ($filter === 'outofstock') {
+                    $stockConditions[] = 'quantity = 0';
+                } elseif ($filter === 'low') {
+                    $stockConditions[] = "(quantity > 0 AND quantity < {$lowStockThreshold})";
+                } elseif ($filter === 'instock') {
+                    // "In stock" means any quantity > 0 (includes both low stock and sufficient stock)
+                    $stockConditions[] = "quantity > 0";
+                }
+            }
+            if (!empty($stockConditions)) {
+                $filterClause .= ' AND (' . implode(' OR ', $stockConditions) . ')';
+            }
         }
 
         // First, get total count for pagination
@@ -536,28 +689,62 @@ class DailyStockRepository extends ServiceEntityRepository
             'boutique_id' => $boutique->getId(),
             'latest_date' => $latestDate
         ];
+
         if ($search) {
             $countParams['search'] = $params['search'];
         }
+        if ($category) {
+            $countParams['category'] = $params['category'];
+        }
         $totalCount = $conn->fetchOne($countSql, $countParams);
 
-        // STEP 1: Get filtered products from current snapshot only (very fast)
+        // Build ORDER BY clause based on sort parameters
+        $orderByClause = 'name ASC'; // default
+        $allowedSorts = ['name', 'reference', 'category', 'out_of_stock'];
+        $orderDirection = strtoupper($order) === 'DESC' ? 'DESC' : 'ASC';
+
+        if (in_array($sort, $allowedSorts)) {
+            if ($sort === 'out_of_stock') {
+                // For out_of_stock, we need to sort by quantity = 0 count, but since we don't have it yet,
+                // we'll just sort by current quantity (0 first if DESC, high first if ASC)
+                $orderByClause = "quantity {$orderDirection}, name ASC";
+            } else {
+                $orderByClause = "{$sort} {$orderDirection}";
+            }
+        }
+
+        // STEP 1: Get filtered products from the latest snapshot (whether custom period or default)
         $sql = "
             SELECT
                 product_id,
                 name,
                 reference,
+                category,
                 quantity as current_quantity
             FROM daily_stocks
             WHERE boutique_id = :boutique_id
                 AND collected_at = :latest_date
                 {$filterClause}
-            ORDER BY name ASC
+            ORDER BY {$orderByClause}
             LIMIT :limit OFFSET :offset
         ";
 
+        // Build params for this specific query (only parameters actually used in the SQL)
+        $queryParams = [
+            'boutique_id' => $boutique->getId(),
+            'latest_date' => $latestDate,
+            'limit' => $perPage,
+            'offset' => $offset
+        ];
+        if ($search) {
+            $queryParams['search'] = $params['search'];
+        }
+        if ($category) {
+            $queryParams['category'] = $params['category'];
+        }
+
         $stmt = $conn->prepare($sql);
-        $result = $stmt->executeQuery($params);
+        $result = $stmt->executeQuery($queryParams);
         $products = $result->fetchAllAssociative();
 
         if (empty($products)) {
@@ -567,22 +754,39 @@ class DailyStockRepository extends ServiceEntityRepository
         // Get product IDs
         $productIds = array_column($products, 'product_id');
 
-        // Ensure days is between 1 and 7
-        $days = max(1, min(7, $days));
+        // Get collection dates based on mode (custom range or last N days)
+        if ($useCustomDateRange) {
+            // Get all distinct dates in the custom range
+            $last7Dates = $conn->fetchFirstColumn('
+                SELECT DISTINCT DATE(collected_at) as date
+                FROM daily_stocks
+                WHERE boutique_id = :boutique_id
+                    AND collected_at >= :start_date
+                    AND collected_at <= :end_date
+                ORDER BY date DESC
+            ', [
+                'boutique_id' => $boutique->getId(),
+                'start_date' => $startDateFormatted,
+                'end_date' => $endDateFormatted
+            ]);
+        } else {
+            // Ensure days is between 1 and 90 (limit for performance)
+            $days = max(1, min(90, $days));
 
-        // Get last N collection dates
-        $last7Dates = $conn->fetchFirstColumn('
-            SELECT DISTINCT DATE(collected_at) as date
-            FROM daily_stocks
-            WHERE boutique_id = :boutique_id
-            AND collected_at <= :latest_date
-            ORDER BY date DESC
-            LIMIT :days
-        ', [
-            'boutique_id' => $boutique->getId(),
-            'latest_date' => $latestDate,
-            'days' => $days
-        ]);
+            // Get last N collection dates
+            $last7Dates = $conn->fetchFirstColumn('
+                SELECT DISTINCT DATE(collected_at) as date
+                FROM daily_stocks
+                WHERE boutique_id = :boutique_id
+                AND collected_at <= :latest_date
+                ORDER BY date DESC
+                LIMIT :days
+            ', [
+                'boutique_id' => $boutique->getId(),
+                'latest_date' => $latestDate,
+                'days' => $days
+            ]);
+        }
 
         // STEP 2: Get history for ONLY these products (much smaller dataset)
         $inClause = implode(',', array_map('intval', $productIds));
@@ -613,12 +817,56 @@ class DailyStockRepository extends ServiceEntityRepository
             $historyIndex[$row['product_id']][$row['collection_date']] = $row['quantity'];
         }
 
+        // Calculate out of stock days for each product
+        $outOfStockDays = [];
+        foreach ($historyIndex as $productId => $dateQuantities) {
+            $outOfStockCount = 0;
+            foreach ($dateQuantities as $quantity) {
+                if ($quantity == 0) {
+                    $outOfStockCount++;
+                }
+            }
+            $outOfStockDays[$productId] = $outOfStockCount;
+        }
+
+        // Get sales data if requested
+        $salesData = [];
+        if ($showSales || $showRevenue) {
+            $salesData = $this->orderRepository->getSalesByProductAndDay(
+                $boutique->getId(),
+                $productIds,
+                $last7Dates
+            );
+        }
+
         // Merge history into products
         foreach ($products as &$product) {
             $productId = $product['product_id'];
             foreach ($last7Dates as $index => $date) {
                 $product["day_{$index}_quantity"] = $historyIndex[$productId][$date] ?? null;
+
+                // Add sales data if available
+                if (isset($salesData[$productId][$date])) {
+                    $product["day_{$index}_sales_qty"] = $salesData[$productId][$date]['quantity'];
+                    $product["day_{$index}_sales_revenue"] = $salesData[$productId][$date]['revenue'];
+                } else {
+                    $product["day_{$index}_sales_qty"] = 0;
+                    $product["day_{$index}_sales_revenue"] = 0;
+                }
             }
+            // Add out of stock days count
+            $product['out_of_stock_days'] = $outOfStockDays[$productId] ?? 0;
+        }
+
+        // Apply excludeOutOfStockDays filter if specified
+        if ($excludeOutOfStockDays !== null && $excludeOutOfStockDays > 0) {
+            $products = array_filter($products, function($product) use ($excludeOutOfStockDays) {
+                return $product['out_of_stock_days'] < $excludeOutOfStockDays;
+            });
+            // Re-index the array to avoid gaps in keys
+            $products = array_values($products);
+            // Update total count to reflect filtered results
+            $totalCount = count($products);
         }
 
         // Format dates for template
@@ -637,5 +885,123 @@ class DailyStockRepository extends ServiceEntityRepository
             'latest_date' => $latestDateTime,
             'total_count' => $totalCount
         ];
+    }
+
+    /**
+     * Get distinct categories for a boutique
+     */
+    public function getDistinctCategories(
+        Boutique $boutique,
+        ?\DateTimeImmutable $startDate = null,
+        ?\DateTimeImmutable $endDate = null
+    ): array {
+        $conn = $this->getEntityManager()->getConnection();
+
+        // If date range is provided, get categories from that range
+        if ($startDate && $endDate) {
+            $categories = $conn->fetchFirstColumn('
+                SELECT DISTINCT category
+                FROM daily_stocks
+                WHERE boutique_id = :boutique_id
+                    AND collected_at >= :start_date
+                    AND collected_at <= :end_date
+                    AND category IS NOT NULL
+                    AND category != \'\'
+                ORDER BY category ASC
+            ', [
+                'boutique_id' => $boutique->getId(),
+                'start_date' => $startDate->setTime(0, 0, 0)->format('Y-m-d H:i:s'),
+                'end_date' => $endDate->setTime(23, 59, 59)->format('Y-m-d H:i:s')
+            ]);
+
+            return $categories;
+        }
+
+        // Get the latest collection date
+        $latestDate = $conn->fetchOne('
+            SELECT MAX(collected_at)
+            FROM daily_stocks
+            WHERE boutique_id = :boutique_id
+        ', ['boutique_id' => $boutique->getId()]);
+
+        if (!$latestDate) {
+            return [];
+        }
+
+        // Get distinct categories from latest snapshot
+        $categories = $conn->fetchFirstColumn('
+            SELECT DISTINCT category
+            FROM daily_stocks
+            WHERE boutique_id = :boutique_id
+                AND collected_at = :latest_date
+                AND category IS NOT NULL
+                AND category != \'\'
+            ORDER BY category ASC
+        ', [
+            'boutique_id' => $boutique->getId(),
+            'latest_date' => $latestDate
+        ]);
+
+        return $categories;
+    }
+
+    /**
+     * Get order data for a specific product by period
+     */
+    public function findProductOrdersByPeriod(
+        Boutique $boutique,
+        int $productId,
+        ?\DateTimeImmutable $startDate = null,
+        ?\DateTimeImmutable $endDate = null,
+        ?int $days = null
+    ): array {
+        $conn = $this->getEntityManager()->getConnection();
+
+        // Determine date range
+        if ($startDate && $endDate) {
+            $startFormatted = $startDate->setTime(0, 0, 0)->format('Y-m-d');
+            $endFormatted = $endDate->setTime(23, 59, 59)->format('Y-m-d');
+        } else {
+            // Use number of days
+            $daysToUse = $days ?? 30;
+            $endDate = new \DateTimeImmutable();
+            $startDate = $endDate->modify("-{$daysToUse} days");
+            $startFormatted = $startDate->format('Y-m-d');
+            $endFormatted = $endDate->format('Y-m-d');
+        }
+
+        // Get sales data grouped by day for this specific product
+        $sql = "
+            SELECT
+                DATE(o.order_date) as order_date,
+                SUM(oi.quantity) as quantity,
+                SUM(oi.total_price) as revenue
+            FROM orders o
+            INNER JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.boutique_id = :boutique_id
+                AND oi.product_id = :product_id
+                AND DATE(o.order_date) >= :start_date
+                AND DATE(o.order_date) <= :end_date
+                AND o.current_state NOT IN ('6', '7', '8')
+            GROUP BY DATE(o.order_date)
+            ORDER BY order_date ASC
+        ";
+
+        $result = $conn->executeQuery($sql, [
+            'boutique_id' => $boutique->getId(),
+            'product_id' => $productId,
+            'start_date' => $startFormatted,
+            'end_date' => $endFormatted
+        ]);
+
+        $data = [];
+        foreach ($result->fetchAllAssociative() as $row) {
+            $data[$row['order_date']] = [
+                'quantity' => (int) $row['quantity'],
+                'revenue' => (float) $row['revenue']
+            ];
+        }
+
+        return $data;
     }
 }

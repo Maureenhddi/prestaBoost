@@ -3,17 +3,15 @@
 {% block title %}Stocks - {{ boutique.name }}{% endblock %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" href="/css/stocks.css?v={{ 'now'|date('YmdHis') }}">
+    <link rel="stylesheet" href="/css/dashboard.css?v={{ 'now'|date('YmdHis') }}">
     <style>
         {% if boutique.primaryColor %}
         :root {
             --primary: {{ boutique.primaryColor }};
         }
-
         body {
             background: linear-gradient(135deg, {{ boutique.primaryColor }} 0%, {{ boutique.primaryColor }}dd 100%);
         }
-
         body::before {
             background:
                 radial-gradient(circle at 20% 50%, {{ boutique.primaryColor }}26 0%, transparent 50%),
@@ -21,143 +19,1191 @@
                 radial-gradient(circle at 40% 20%, {{ boutique.primaryColor }}26 0%, transparent 50%);
         }
         {% endif %}
+
+        .filters-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px 40px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .filters-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            margin-top: 24px;
+        }
+
+        .filters-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .date-filters-row {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 24px;
+            background: var(--gray-50);
+            border-radius: 12px;
+            border: 1px dashed var(--gray-300);
+            margin-top: 8px;
+        }
+
+        .date-filters-row .filter-group label {
+            font-weight: 700;
+        }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .checkboxes-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .filters-card {
+                padding: 24px 28px;
+            }
+
+            .filters-grid {
+                gap: 24px;
+            }
+
+            .date-filters-row {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .filters-card {
+                padding: 20px 20px;
+            }
+
+            .date-row,
+            .checkboxes-row {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-row {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-badges-container {
+                gap: 12px;
+            }
+
+            .filter-badge {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+
+            .filter-badge-icon {
+                font-size: 16px;
+            }
+
+            .days-input-group {
+                flex-wrap: wrap;
+            }
+
+            .quick-days-btn {
+                flex: 1;
+                min-width: 60px;
+            }
+
+            .days-input-group input {
+                flex: 1;
+                min-width: 80px;
+            }
+
+            .checkbox-label {
+                padding: 12px 14px;
+            }
+
+            .checkbox-title {
+                font-size: 13px;
+            }
+
+            .checkbox-subtitle {
+                font-size: 10px;
+            }
+
+            .stocks-table-card {
+                margin-left: -20px;
+                margin-right: -20px;
+                border-radius: 0;
+            }
+
+            .stocks-table th {
+                font-size: 11px;
+                padding: 12px 10px;
+            }
+
+            .stocks-table td {
+                font-size: 13px;
+                padding: 12px 10px;
+            }
+
+            /* Reduce sticky column width on tablet */
+            .stocks-table th:nth-child(2),
+            .stocks-table td:nth-child(2) {
+                left: 80px;
+                min-width: 200px;
+            }
+
+            .quantity-badge {
+                font-size: 12px;
+                padding: 3px 8px;
+            }
+
+            .btn-view,
+            .btn-detail {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+
+            .actions-cell {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+        }
+
+        @media (max-width: 480px) {
+            .filters-card {
+                padding: 16px 12px;
+                border-radius: 12px;
+            }
+
+            .filters-grid {
+                gap: 20px;
+            }
+
+            .filters-row {
+                gap: 16px;
+            }
+
+            .filter-group label {
+                font-size: 12px;
+                margin-bottom: 8px;
+            }
+
+            .filter-group input,
+            .filter-group select {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            .filter-badges-container {
+                gap: 10px;
+            }
+
+            .filter-badge {
+                padding: 10px 14px;
+                font-size: 12px;
+                flex: 1 1 auto;
+                min-width: calc(50% - 5px);
+            }
+
+            .filter-badge-icon {
+                font-size: 14px;
+            }
+
+            .filter-badge-text {
+                font-size: 12px;
+            }
+
+            .days-input-group {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .quick-days-btn {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            .days-input-group input {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+
+            .date-filters-row {
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .date-row {
+                gap: 16px;
+            }
+
+            .checkboxes-row {
+                gap: 12px;
+            }
+
+            .checkbox-label {
+                padding: 12px 12px;
+                gap: 10px;
+            }
+
+            .checkbox-label input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+            }
+
+            .checkbox-title {
+                font-size: 12px;
+            }
+
+            .checkbox-subtitle {
+                font-size: 9px;
+            }
+
+            .filter-actions {
+                flex-direction: column;
+                gap: 12px;
+                margin-top: 20px;
+            }
+
+            .btn-filter {
+                width: 100%;
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+
+            /* Disable sticky columns on small mobile for better scrolling */
+            .stocks-table th:first-child,
+            .stocks-table td:first-child,
+            .stocks-table th:nth-child(2),
+            .stocks-table td:nth-child(2) {
+                position: static !important;
+                background: inherit !important;
+                box-shadow: none !important;
+                left: auto !important;
+            }
+
+            .stocks-table tbody tr:nth-child(even) td:first-child,
+            .stocks-table tbody tr:nth-child(even) td:nth-child(2) {
+                background: inherit !important;
+            }
+
+            .stocks-table tbody tr:hover td:first-child,
+            .stocks-table tbody tr:hover td:nth-child(2) {
+                background: var(--gray-50) !important;
+            }
+
+            .stocks-table {
+                min-width: 600px;
+            }
+
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 10px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--gray-300);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .btn-filter {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-filter.primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-filter.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-filter.secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .btn-filter.secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .stocks-table-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        .table-scroll-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            max-width: 100%;
+            position: relative;
+        }
+
+        /* Scroll indicators */
+        .table-scroll-wrapper::before,
+        .table-scroll-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 20px;
+            width: 40px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .table-scroll-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent);
+        }
+
+        .table-scroll-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.1), transparent);
+        }
+
+        .table-scroll-wrapper.scrolled-left::before {
+            opacity: 1;
+        }
+
+        .table-scroll-wrapper.scrolled-right::after {
+            opacity: 1;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar {
+            height: 12px;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 6px;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 6px;
+            border: 2px solid var(--gray-100);
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+            opacity: 0.8;
+        }
+
+        .stocks-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .stocks-table th:first-child,
+        .stocks-table td:first-child {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 10;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stocks-table thead th:first-child {
+            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+            z-index: 11;
+        }
+
+        .stocks-table th:nth-child(2),
+        .stocks-table td:nth-child(2) {
+            position: sticky;
+            left: 100px;
+            background: white;
+            z-index: 10;
+            min-width: 250px;
+            box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stocks-table thead th:nth-child(2) {
+            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+            z-index: 11;
+        }
+
+        /* Zebra striping for better row tracking */
+        .stocks-table tbody tr:nth-child(even) {
+            background: rgba(249, 250, 251, 0.5);
+        }
+
+        .stocks-table tbody tr:nth-child(even) td:first-child,
+        .stocks-table tbody tr:nth-child(even) td:nth-child(2) {
+            background: rgba(249, 250, 251, 0.95);
+        }
+
+        .stocks-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .stocks-table tbody tr:hover td:first-child,
+        .stocks-table tbody tr:hover td:nth-child(2) {
+            background: var(--gray-50);
+        }
+
+        .stocks-table thead {
+            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+        }
+
+        .stocks-table th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gray-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .stocks-table th.center {
+            text-align: center;
+        }
+
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--gray-700);
+        }
+
+        .sortable-header:hover {
+            color: var(--primary);
+        }
+
+        .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            font-size: 10px;
+            line-height: 1;
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
+
+        .sortable-header:hover .sort-icon {
+            opacity: 0.6;
+        }
+
+        .sort-icon.active {
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        .sort-icon .sort-up,
+        .sort-icon .sort-down {
+            display: block;
+            height: 6px;
+        }
+
+        .stocks-table tbody tr {
+            border-bottom: 1px solid var(--gray-200);
+            transition: all 0.2s ease;
+        }
+
+        .stocks-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .stocks-table td {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: var(--gray-900);
+        }
+
+        .product-ref {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .product-name {
+            color: var(--gray-700);
+            font-size: 13px;
+        }
+
+        .quantity-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .qty-ok { background: #d1fae5; color: #065f46; }
+        .qty-low { background: #fef3c7; color: #92400e; }
+        .qty-out { background: #fee2e2; color: #991b1b; }
+        .qty-na { background: var(--gray-200); color: var(--gray-600); }
+
+        .day-cell-content {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+            padding: 4px 0;
+        }
+
+        .sales-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding: 6px 8px;
+            background: var(--gray-50);
+            border-radius: 6px;
+            border: 1px solid var(--gray-200);
+            min-width: 80px;
+        }
+
+        .sales-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .sales-label {
+            color: var(--gray-500);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 0.5px;
+        }
+
+        .sales-value {
+            font-weight: 700;
+            color: var(--gray-700);
+        }
+
+        .sales-qty .sales-value {
+            color: #0891b2;
+        }
+
+        .sales-revenue .sales-value {
+            color: #059669;
+        }
+
+        .sales-info.has-sales {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+            border-color: #a7f3d0;
+        }
+
+        /* Simple checkbox label styles */
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            padding: 14px 18px;
+            border-radius: 10px;
+            background: white;
+            border: 2px solid var(--gray-200);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            gap: 14px;
+        }
+
+        .checkbox-label:hover {
+            border-color: var(--primary);
+            background: var(--gray-50);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            flex-shrink: 0;
+            accent-color: #0891b2;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked ~ .checkbox-text .checkbox-title {
+            color: #0891b2;
+        }
+
+        .checkbox-label input[type="checkbox"]:checked ~ .checkbox-text .checkbox-subtitle {
+            color: #0e7490;
+        }
+
+        .checkbox-label:has(input[type="checkbox"]:checked) {
+            border-color: #0891b2;
+            background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%);
+        }
+
+        .checkbox-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .checkbox-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-700);
+            transition: color 0.2s ease;
+        }
+
+        .checkbox-subtitle {
+            font-size: 11px;
+            color: var(--gray-500);
+            line-height: 1.4;
+            transition: color 0.2s ease;
+        }
+
+        .btn-view {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .btn-view:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-detail {
+            padding: 8px 16px;
+            background: #0891b2;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+
+        .btn-detail:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 24px;
+        }
+
+        .pagination a,
+        .pagination span {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .pagination a {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .pagination a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .pagination .current {
+            background: var(--primary);
+            color: white;
+        }
+
+        .empty-state {
+            padding: 80px 30px;
+            text-align: center;
+        }
+
+        .empty-state svg {
+            opacity: 0.2;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        .quick-days-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--gray-300);
+            border-radius: 8px;
+            background: white;
+            color: var(--gray-700);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-days-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .quick-days-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .days-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .days-input-group input {
+            width: 70px;
+        }
+
+        /* Filter badges styles */
+        .filter-badges-container {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-badge-label {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .filter-badge-label input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .filter-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .filter-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: currentColor;
+            opacity: 0.08;
+            transition: opacity 0.25s ease;
+        }
+
+        .filter-badge:hover::before {
+            opacity: 0.15;
+        }
+
+        .filter-badge-icon {
+            font-size: 18px;
+            transition: transform 0.25s ease;
+        }
+
+        .filter-badge-label:hover .filter-badge-icon {
+            transform: scale(1.1);
+        }
+
+        .filter-badge-text {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* En stock - Green */
+        .filter-badge.instock {
+            color: #059669;
+            background: #d1fae5;
+        }
+
+        .filter-badge-label input[type="checkbox"]:checked ~ .filter-badge.instock {
+            background: #059669;
+            color: white;
+            border-color: #047857;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        /* Stock faible - Orange */
+        .filter-badge.low {
+            color: #d97706;
+            background: #fef3c7;
+        }
+
+        .filter-badge-label input[type="checkbox"]:checked ~ .filter-badge.low {
+            background: #f59e0b;
+            color: white;
+            border-color: #d97706;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        /* Rupture - Red */
+        .filter-badge.outofstock {
+            color: #dc2626;
+            background: #fee2e2;
+        }
+
+        .filter-badge-label input[type="checkbox"]:checked ~ .filter-badge.outofstock {
+            background: #dc2626;
+            color: white;
+            border-color: #b91c1c;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+
+        .filter-badge-label input[type="checkbox"]:checked ~ .filter-badge::before {
+            opacity: 0;
+        }
     </style>
 {% endblock %}
 
-{% block navbar %}
-<div class="container">
-    <nav class="navbar">
-        <div class="navbar-brand">
-            {% if boutique.logoUrl %}
-                <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}" style="max-height: 40px;">
-            {% else %}
-                {{ boutique.name }}
-            {% endif %}
-        </div>
-        <ul class="navbar-menu">
-            <li><a href="{{ path('app_dashboard') }}">← Mes Boutiques</a></li>
-            <li><a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}">Dashboard</a></li>
-            <li><a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="active">Stocks</a></li>
-            <li><a href="{{ path('app_boutique_orders', {id: boutique.id}) }}">Commandes</a></li>
-            <li><a href="{{ path('app_boutique_settings', {id: boutique.id}) }}">Paramètres</a></li>
-            {% if app.user.isSuperAdmin() %}
-                <li><a href="{{ path('app_users') }}">Utilisateurs</a></li>
-            {% endif %}
-            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
-        </ul>
-    </nav>
-</div>
+{% block sidebar %}
+    {% include '_sidebar.html.twig' with {'boutique': boutique, 'activeRoute': 'app_boutique_stocks'} %}
 {% endblock %}
 
 {% block body %}
 
-<div class="page-header">
-    <div class="page-title">
-        <h1>{{ boutique.name }}</h1>
-        <p>{{ boutique.domain }}</p>
+<div class="dashboard-header">
+    <div class="dashboard-header-left">
+        {% if boutique.logoUrl %}
+            <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}">
+        {% endif %}
+        <div>
+            <h1>Stocks</h1>
+            <p>{{ boutique.name }}</p>
+        </div>
     </div>
-    <a href="{{ path('app_dashboard') }}" class="btn btn-secondary">Retour</a>
+    <div class="dashboard-header-stats">
+        <div class="dashboard-stat">
+            <div class="dashboard-stat-value primary">{{ stats.total }}</div>
+            <div class="dashboard-stat-label">Produits</div>
+        </div>
+        <div class="dashboard-stat">
+            <div class="dashboard-stat-value" style="color: #f59e0b;">{{ stats.lowStock }}</div>
+            <div class="dashboard-stat-label">Stock Faible</div>
+        </div>
+        <div class="dashboard-stat">
+            <div class="dashboard-stat-value" style="color: #dc3545;">{{ stats.outOfStock }}</div>
+            <div class="dashboard-stat-label">Rupture</div>
+        </div>
+    </div>
 </div>
 
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">Évolution des stocks</h2>
+<div class="filters-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">
+        <h3 style="font-size: 16px; font-weight: 700; margin: 0;">Filtres</h3>
+        {% if search or category or filters|length > 0 %}
+        <span style="font-size: 12px; color: var(--primary); font-weight: 600; background: rgba(16, 185, 129, 0.1); padding: 4px 12px; border-radius: 8px;">
+            ✓ Filtres actifs
+        </span>
+        {% endif %}
+    </div>
+    <form method="get" id="filtersForm">
+        <input type="hidden" name="submitted" value="1">
+        <div class="filters-grid">
+            <!-- Première rangée: Recherche et Catégorie -->
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label for="search">Recherche</label>
+                    <input type="text" id="search" name="search" value="{{ search }}" placeholder="Nom ou référence...">
+                </div>
+                <div class="filter-group">
+                    <label for="category">Catégorie</label>
+                    <select id="category" name="category">
+                        <option value="">Toutes les catégories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {{ category == cat ? 'selected' : '' }}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
 
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <label for="daysSelector" style="font-weight: 600; color: var(--gray-700); font-size: 0.875rem;">Afficher :</label>
-            <select id="daysSelector"
-                    style="padding: 0.5rem 1rem; border: 1px solid var(--gray-300); border-radius: var(--radius-md); background: white; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
-                <option value="1" {{ days == 1 ? 'selected' : '' }}>1 jour</option>
-                <option value="2" {{ days == 2 ? 'selected' : '' }}>2 jours</option>
-                <option value="3" {{ days == 3 ? 'selected' : '' }}>3 jours</option>
-                <option value="4" {{ days == 4 ? 'selected' : '' }}>4 jours</option>
-                <option value="5" {{ days == 5 ? 'selected' : '' }}>5 jours</option>
-                <option value="6" {{ days == 6 ? 'selected' : '' }}>6 jours</option>
-                <option value="7" {{ days == 7 ? 'selected' : '' }}>7 jours</option>
-            </select>
+            <!-- Deuxième rangée: Niveau de stock badges -->
+            <div class="filter-group">
+                <label style="margin-bottom: 12px; display: block;">Niveau de stock</label>
+                <div class="filter-badges-container">
+                    <label class="filter-badge-label">
+                        <input type="checkbox" name="filters[]" value="instock" {{ 'instock' in filters ? 'checked' : '' }}>
+                        <div class="filter-badge instock">
+                            <span class="filter-badge-icon">✅</span>
+                            <span class="filter-badge-text">En stock</span>
+                        </div>
+                    </label>
+                    <label class="filter-badge-label">
+                        <input type="checkbox" name="filters[]" value="low" {{ 'low' in filters ? 'checked' : '' }}>
+                        <div class="filter-badge low">
+                            <span class="filter-badge-icon">⚠️</span>
+                            <span class="filter-badge-text">Stock faible</span>
+                        </div>
+                    </label>
+                    <label class="filter-badge-label">
+                        <input type="checkbox" name="filters[]" value="outofstock" {{ 'outofstock' in filters ? 'checked' : '' }}>
+                        <div class="filter-badge outofstock">
+                            <span class="filter-badge-icon">❌</span>
+                            <span class="filter-badge-text">Rupture</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Troisième rangée: Nombre de jours et Exclusion ruptures -->
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label>Nombre de jours d'historique</label>
+                    <div class="days-input-group">
+                        <button type="button" class="quick-days-btn {{ days == 7 ? 'active' : '' }}" data-days="7">7j</button>
+                        <button type="button" class="quick-days-btn {{ days == 14 ? 'active' : '' }}" data-days="14">14j</button>
+                        <button type="button" class="quick-days-btn {{ days == 30 ? 'active' : '' }}" data-days="30">30j</button>
+                        <input type="number" id="daysInput" name="days" min="1" max="90" value="{{ days }}" class="filter-group input" placeholder="Jours">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label for="excludeOutOfStockDays" style="display: flex; align-items: center; gap: 6px;">
+                        🚫 Exclure ruptures depuis
+                        <span style="font-size: 12px; color: var(--gray-500); font-weight: 400;">(jours)</span>
+                    </label>
+                    <input type="number" id="excludeOutOfStockDays" name="excludeOutOfStockDays" min="0" max="365" value="{{ excludeOutOfStockDays ?? '' }}" placeholder="Ex: 30 jours" style="width: 100%; padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px;">
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'all', search: search, days: days}) }}"
-           class="filter-btn {{ filter == 'all' ? 'active' : '' }}">
-            Tous ({{ stats.total }})
-        </a>
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'low', search: search, days: days}) }}"
-           class="filter-btn {{ filter == 'low' ? 'active' : '' }}">
-            Stock faible ({{ stats.lowStock }})
-        </a>
-        <a href="{{ path('app_boutique_stocks', {id: boutique.id, filter: 'outofstock', search: search, days: days}) }}"
-           class="filter-btn {{ filter == 'outofstock' ? 'active' : '' }}">
-            Rupture ({{ stats.outOfStock }})
-        </a>
-    </div>
+        <div class="date-filters-row">
+            <div class="date-row">
+                <div class="filter-group">
+                    <label for="startDate">📅 Date de début</label>
+                    <input type="date" id="startDate" name="startDate" value="{{ startDate }}" placeholder="Sélectionner une date">
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">📅 Date de fin</label>
+                    <input type="date" id="endDate" name="endDate" value="{{ endDate }}" placeholder="Sélectionner une date">
+                </div>
+            </div>
+            <div class="checkboxes-row">
+                <div class="filter-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showSales" name="showSales" value="1" {{ showSales ? 'checked' : '' }}>
+                        <div class="checkbox-text">
+                            <div class="checkbox-title">📊 Afficher produits vendus</div>
+                            <div class="checkbox-subtitle">Quantité vendue par jour</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="filter-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showRevenue" name="showRevenue" value="1" {{ showRevenue ? 'checked' : '' }}>
+                        <div class="checkbox-text">
+                            <div class="checkbox-title">💰 Afficher CA généré</div>
+                            <div class="checkbox-subtitle">Chiffre d'affaires TTC par jour</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
 
-    <form method="get" action="{{ path('app_boutique_stocks', {id: boutique.id}) }}" class="search-bar">
-        <input type="hidden" name="filter" value="{{ filter }}">
-        <input type="hidden" name="days" value="{{ days }}">
-        <input type="text"
-               name="search"
-               id="productSearch"
-               value="{{ search }}"
-               placeholder="🔍 Rechercher un produit (nom ou référence)..."
-               class="search-input">
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter primary">Appliquer</button>
+            <a href="{{ path('app_boutique_stocks', {id: boutique.id, reset: 1}) }}" class="btn-filter secondary">Réinitialiser</a>
+        </div>
     </form>
+</div>
 
-    <div style="margin-bottom: 1.5rem;">
-        <p style="margin: 0; color: var(--gray-600); font-size: 0.875rem;">
-            <span id="displayCount">{{ totalItems }}</span> produit<span id="pluralProducts">{{ totalItems > 1 ? 's' : '' }}</span> affiché<span id="pluralDisplay">{{ totalItems > 1 ? 's' : '' }}</span>
-        </p>
-    </div>
-
+<div class="stocks-table-card">
     {% if stocksData.stocks is empty %}
         <div class="empty-state">
+            <svg width="80" height="80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
             <h3>Aucun stock disponible</h3>
             <p>Les données de stock pour cette boutique n'ont pas encore été collectées.</p>
-            <p style="font-size: 14px; opacity: 0.5;">Utilisez la commande <code>make collect-boutique ID={{ boutique.id }}</code> pour collecter les données.</p>
         </div>
     {% else %}
-        <div class="table-container">
-            <table>
+        <div class="table-scroll-wrapper">
+            <table class="stocks-table">
                 <thead>
                     <tr>
-                        <th>Référence</th>
-                        <th>Nom du produit</th>
+                        <th>
+                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'reference', 'order': (sort == 'reference' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                                Référence
+                                <span class="sort-icon {{ sort == 'reference' ? 'active' : '' }}">
+                                    <span class="sort-up">{{ (sort == 'reference' and order == 'asc') ? '▲' : '△' }}</span>
+                                    <span class="sort-down">{{ (sort == 'reference' and order == 'desc') ? '▼' : '▽' }}</span>
+                                </span>
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'name', 'order': (sort == 'name' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                                Nom du produit
+                                <span class="sort-icon {{ sort == 'name' ? 'active' : '' }}">
+                                    <span class="sort-up">{{ (sort == 'name' and order == 'asc') ? '▲' : '△' }}</span>
+                                    <span class="sort-down">{{ (sort == 'name' and order == 'desc') ? '▼' : '▽' }}</span>
+                                </span>
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'category', 'order': (sort == 'category' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                                Catégorie
+                                <span class="sort-icon {{ sort == 'category' ? 'active' : '' }}">
+                                    <span class="sort-up">{{ (sort == 'category' and order == 'asc') ? '▲' : '△' }}</span>
+                                    <span class="sort-down">{{ (sort == 'category' and order == 'desc') ? '▼' : '▽' }}</span>
+                                </span>
+                            </a>
+                        </th>
+                        <th class="center">
+                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'out_of_stock', 'order': (sort == 'out_of_stock' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                                Jours hors stock
+                                <span class="sort-icon {{ sort == 'out_of_stock' ? 'active' : '' }}">
+                                    <span class="sort-up">{{ (sort == 'out_of_stock' and order == 'asc') ? '▲' : '△' }}</span>
+                                    <span class="sort-down">{{ (sort == 'out_of_stock' and order == 'desc') ? '▼' : '▽' }}</span>
+                                </span>
+                            </a>
+                        </th>
                         {% for date in stocksData.dates %}
-                            <th style="text-align: center;">{{ date.label }}</th>
+                            <th class="center">{{ date.label }}</th>
                         {% endfor %}
-                        <th style="text-align: center;">Actions</th>
+                        <th class="center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for stock in stocksData.stocks %}
-                        <tr>
-                            <td><strong>{{ stock.reference ?? '-' }}</strong></td>
-                            <td>{{ stock.name }}</td>
-                            {% for i in 0..(stocksData.dates|length - 1) %}
-                                {% set quantity = attribute(stock, 'day_' ~ i ~ '_quantity') %}
-                                <td style="text-align: center;">
-                                    {% if quantity is not null %}
-                                        {% if quantity == 0 %}
-                                            <span style="color: #dc3545; font-weight: 600;">{{ quantity }}</span>
-                                        {% elseif quantity < 10 %}
-                                            <span style="color: #f59e0b; font-weight: 600;">{{ quantity }}</span>
-                                        {% else %}
-                                            <span style="color: #10b981; font-weight: 600;">{{ quantity }}</span>
-                                        {% endif %}
-                                    {% else %}
-                                        <span style="opacity: 0.3;">-</span>
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
+                    <tr>
+                        <td>
+                            <div class="product-ref">{{ stock.reference ?? '-' }}</div>
+                        </td>
+                        <td>
+                            <div class="product-name">{{ stock.name }}</div>
+                        </td>
+                        <td>
+                            <div style="font-size: 13px; color: var(--gray-600);">{{ stock.category ?? '-' }}</div>
+                        </td>
+                        <td style="text-align: center;">
+                            {% if stock.out_of_stock_days > 0 %}
+                                <span class="quantity-badge qty-out" style="font-weight: 700;">{{ stock.out_of_stock_days }}</span>
+                            {% else %}
+                                <span style="color: var(--gray-400); font-size: 14px;">0</span>
+                            {% endif %}
+                        </td>
+                        {% for i in 0..(stocksData.dates|length - 1) %}
+                            {% set quantity = attribute(stock, 'day_' ~ i ~ '_quantity') %}
+                            {% set salesQty = attribute(stock, 'day_' ~ i ~ '_sales_qty') %}
+                            {% set salesRevenue = attribute(stock, 'day_' ~ i ~ '_sales_revenue') %}
                             <td style="text-align: center;">
-                                <a href="{{ path('app_product_history', {boutiqueId: boutique.id, productId: stock.product_id}) }}"
-                                   class="btn-chart"
-                                   title="Voir l'historique">
-                                    📈
-                                </a>
+                                {% if quantity is not null %}
+                                    {% set qtyClass = 'qty-ok' %}
+                                    {% if quantity == 0 %}
+                                        {% set qtyClass = 'qty-out' %}
+                                    {% elseif quantity < boutique.lowStockThreshold %}
+                                        {% set qtyClass = 'qty-low' %}
+                                    {% endif %}
+                                    <div class="day-cell-content">
+                                        <span class="quantity-badge {{ qtyClass }}">{{ quantity }}</span>
+                                        {% if showSales or showRevenue %}
+                                            <div class="sales-info {{ salesQty > 0 ? 'has-sales' : '' }}">
+                                                {% if showSales %}
+                                                    <div class="sales-row sales-qty">
+                                                        <span class="sales-label">Vendus</span>
+                                                        <span class="sales-value">{{ salesQty }}</span>
+                                                    </div>
+                                                {% endif %}
+                                                {% if showRevenue %}
+                                                    <div class="sales-row sales-revenue">
+                                                        <span class="sales-label">CA TTC</span>
+                                                        <span class="sales-value">{{ salesRevenue|number_format(2, ',', ' ') }}€</span>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="quantity-badge qty-na">-</span>
+                                {% endif %}
                             </td>
-                        </tr>
+                        {% endfor %}
+                        <td style="text-align: center;">
+                            <a href="{{ path('app_product_detail', {boutiqueId: boutique.id, productId: stock.product_id}) }}" class="btn-detail">📊 Fiche produit</a>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -166,25 +1212,21 @@
         {% if totalPages > 1 %}
         <div class="pagination">
             {% if currentPage > 1 %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: 1, filter: filter, search: search, days: days}) }}" class="pagination-btn">
-                    &laquo; Première
-                </a>
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, filter: filter, search: search, days: days}) }}" class="pagination-btn">
-                    &lsaquo; Précédente
-                </a>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, filter: filter, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">← Précédent</a>
             {% endif %}
 
-            <span class="pagination-info">
-                Page {{ currentPage }} sur {{ totalPages }}
-            </span>
+            {% for page in 1..totalPages %}
+                {% if page == currentPage %}
+                    <span class="current">{{ page }}</span>
+                {% elseif page == 1 or page == totalPages or (page >= currentPage - 2 and page <= currentPage + 2) %}
+                    <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: page, filter: filter, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">{{ page }}</a>
+                {% elseif page == currentPage - 3 or page == currentPage + 3 %}
+                    <span>...</span>
+                {% endif %}
+            {% endfor %}
 
             {% if currentPage < totalPages %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, filter: filter, search: search, days: days}) }}" class="pagination-btn">
-                    Suivante &rsaquo;
-                </a>
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: totalPages, filter: filter, search: search, days: days}) }}" class="pagination-btn">
-                    Dernière &raquo;
-                </a>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, filter: filter, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">Suivant →</a>
             {% endif %}
         </div>
         {% endif %}
@@ -194,40 +1236,84 @@
 {% block javascripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('productSearch');
-    const searchForm = searchInput?.closest('form');
+    const filtersForm = document.getElementById('filtersForm');
+    const daysInput = document.getElementById('daysInput');
+    const quickDaysBtns = document.querySelectorAll('.quick-days-btn');
 
-    if (searchInput && searchForm) {
-        let searchTimeout;
-
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-
-            // Auto-submit après 500ms d'inactivité
-            searchTimeout = setTimeout(() => {
-                searchForm.submit();
-            }, 500);
+    // Handle quick days buttons (only update value, don't submit)
+    quickDaysBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active class from all buttons
+            quickDaysBtns.forEach(b => b.classList.remove('active'));
+            // Add active class to clicked button
+            this.classList.add('active');
+            // Set input value
+            const days = this.getAttribute('data-days');
+            daysInput.value = days;
         });
+    });
 
-        // Submit immédiat sur Enter
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                clearTimeout(searchTimeout);
-                searchForm.submit();
+    // Handle days input validation
+    if (daysInput) {
+        daysInput.addEventListener('input', function() {
+            // Validate and clamp value
+            let value = parseInt(this.value);
+            if (value < 1) value = 1;
+            if (value > 90) value = 90;
+            this.value = value;
+        });
+    }
+
+    // Handle table scroll indicators
+    const tableScrollWrapper = document.querySelector('.table-scroll-wrapper');
+    if (tableScrollWrapper) {
+        function updateScrollIndicators() {
+            const scrollLeft = tableScrollWrapper.scrollLeft;
+            const scrollWidth = tableScrollWrapper.scrollWidth;
+            const clientWidth = tableScrollWrapper.clientWidth;
+            const maxScroll = scrollWidth - clientWidth;
+
+            // Add/remove classes based on scroll position
+            if (scrollLeft > 10) {
+                tableScrollWrapper.classList.add('scrolled-left');
+            } else {
+                tableScrollWrapper.classList.remove('scrolled-left');
+            }
+
+            if (scrollLeft < maxScroll - 10) {
+                tableScrollWrapper.classList.add('scrolled-right');
+            } else {
+                tableScrollWrapper.classList.remove('scrolled-right');
+            }
+        }
+
+        // Update on scroll
+        tableScrollWrapper.addEventListener('scroll', updateScrollIndicators);
+
+        // Update on load and resize
+        updateScrollIndicators();
+        window.addEventListener('resize', updateScrollIndicators);
+    }
+
+    // Date validation
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    if (filtersForm && startDateInput && endDateInput) {
+        filtersForm.addEventListener('submit', function(e) {
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+
+            // Only validate if both dates are provided
+            if (startDate && endDate && startDate > endDate) {
+                e.preventDefault();
+                alert('La date de début doit être antérieure à la date de fin');
+                return false;
             }
         });
     }
 
-    // Handle days selector change
-    const daysSelector = document.getElementById('daysSelector');
-    if (daysSelector) {
-        daysSelector.addEventListener('change', function() {
-            const url = new URL(window.location.href);
-            url.searchParams.set('days', this.value);
-            url.searchParams.delete('page'); // Reset pagination
-            window.location.href = url.href;
-        });
-    }
+    // No JavaScript needed for checkboxes - they work natively!
 });
 </script>
 {% endblock %}
