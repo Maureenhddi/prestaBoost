@@ -1,0 +1,13 @@
+# PrestaBoost Automated Data Collection
+#
+# Format: minute hour day month weekday command
+#
+
+# Collect stock data every hour
+0 * * * * cd /var/www/html && php bin/console app:collect-prestashop-data --all >> /var/log/cron.log 2>&1
+
+# Collect orders data every 30 minutes
+*/30 * * * * cd /var/www/html && php bin/console app:collect-prestashop-data --all --orders --orders-days=7 >> /var/log/cron.log 2>&1
+
+# Keep the log file from growing too much (run daily at 3am)
+0 3 * * * truncate -s 10M /var/log/cron.log

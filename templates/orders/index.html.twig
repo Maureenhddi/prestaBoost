@@ -1,0 +1,792 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Commandes - {{ boutique.name }}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="/css/dashboard.css?v={{ 'now'|date('YmdHis') }}">
+    <style>
+        {% if boutique.primaryColor %}
+        :root {
+            --primary: {{ boutique.primaryColor }};
+        }
+        body {
+            background: linear-gradient(135deg, {{ boutique.primaryColor }} 0%, {{ boutique.primaryColor }}dd 100%);
+        }
+        body::before {
+            background:
+                radial-gradient(circle at 20% 50%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, {{ boutique.primaryColor }}26 0%, transparent 50%);
+        }
+        {% endif %}
+
+        .filters-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 24px 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--gray-300);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .btn-filter {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-filter.primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-filter.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-filter.secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .btn-filter.secondary:hover {
+            background: var(--gray-300);
+        }
+
+        .orders-table-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        .table-scroll-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            max-width: 100%;
+            position: relative;
+        }
+
+        /* Scroll indicators */
+        .table-scroll-wrapper::before,
+        .table-scroll-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 20px;
+            width: 40px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .table-scroll-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.1), transparent);
+        }
+
+        .table-scroll-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.1), transparent);
+        }
+
+        .table-scroll-wrapper.scrolled-left::before {
+            opacity: 1;
+        }
+
+        .table-scroll-wrapper.scrolled-right::after {
+            opacity: 1;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar {
+            height: 12px;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 6px;
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 6px;
+            border: 2px solid var(--gray-100);
+        }
+
+        .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+            opacity: 0.8;
+        }
+
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        .orders-table thead {
+            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+        }
+
+        .orders-table th {
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gray-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--gray-700);
+        }
+
+        .sortable-header:hover {
+            color: var(--primary);
+        }
+
+        .sort-icon {
+            display: inline-flex;
+            flex-direction: column;
+            font-size: 10px;
+            line-height: 1;
+            opacity: 0.3;
+            transition: opacity 0.2s ease;
+        }
+
+        .sortable-header:hover .sort-icon {
+            opacity: 0.6;
+        }
+
+        .sort-icon.active {
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        .sort-icon .sort-up,
+        .sort-icon .sort-down {
+            display: block;
+            height: 6px;
+        }
+
+        .orders-table tbody tr {
+            border-bottom: 1px solid var(--gray-200);
+            transition: all 0.2s ease;
+        }
+
+        /* Zebra striping for better row tracking */
+        .orders-table tbody tr:nth-child(even) {
+            background: rgba(249, 250, 251, 0.5);
+        }
+
+        .orders-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .orders-table td {
+            padding: 16px 20px;
+            font-size: 14px;
+            color: var(--gray-900);
+        }
+
+        .order-ref {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .order-date {
+            color: var(--gray-600);
+            font-size: 13px;
+        }
+
+        .order-amount {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .status-processing { background: #dbeafe; color: #1e40af; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+
+        .btn-view {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 24px;
+        }
+
+        .pagination a,
+        .pagination span {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .pagination a {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .pagination a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .pagination .current {
+            background: var(--primary);
+            color: white;
+        }
+
+        .empty-state {
+            padding: 80px 30px;
+            text-align: center;
+        }
+
+        .empty-state svg {
+            opacity: 0.2;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            color: var(--gray-500);
+        }
+
+        .margin-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .margin-excellent { background: #d1fae5; color: #065f46; }
+        .margin-good { background: #bfdbfe; color: #1e40af; }
+        .margin-fair { background: #fef3c7; color: #92400e; }
+        .margin-low { background: #fee2e2; color: #991b1b; }
+        .margin-unavailable { background: var(--gray-200); color: var(--gray-600); }
+
+        @media (max-width: 768px) {
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .orders-table-card {
+                margin-left: -20px;
+                margin-right: -20px;
+                border-radius: 0;
+            }
+
+            .orders-table {
+                min-width: 750px;
+            }
+
+            .orders-table th {
+                font-size: 11px;
+                padding: 12px 10px;
+            }
+
+            .orders-table td {
+                font-size: 13px;
+                padding: 12px 10px;
+            }
+
+            .status-badge,
+            .payment-badge,
+            .margin-badge {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+
+        }
+
+        @media (max-width: 480px) {
+            .filters-card {
+                padding: 20px 16px;
+            }
+
+            .filter-actions {
+                flex-direction: column;
+            }
+
+            .btn-filter {
+                width: 100%;
+            }
+
+
+            .orders-table {
+                min-width: 600px;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block sidebar %}
+<div class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-brand">
+            {% if boutique.logoUrl %}
+                <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}">
+            {% endif %}
+            <span>{{ boutique.name }}</span>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <ul class="sidebar-menu">
+            <li>
+                <a href="{{ path('app_dashboard') }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span>Mes Boutiques</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <span>Stocks</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_orders', {id: boutique.id}) }}" class="active">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                    </svg>
+                    <span>Commandes</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_analytics', {id: boutique.id}) }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span>Analyses</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_boutique_settings', {id: boutique.id}) }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Paramètres</span>
+                </a>
+            </li>
+            {% if app.user.isSuperAdmin() %}
+            <li>
+                <a href="{{ path('app_users') }}">
+                    <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span>Utilisateurs</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ path('app_logout') }}">
+            <svg class="sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            <span>Déconnexion</span>
+        </a>
+    </div>
+</div>
+
+<!-- Mobile sidebar toggle -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">
+    <div class="sidebar-toggle-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</button>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    sidebar.classList.toggle('open');
+    mainContent.classList.toggle('sidebar-open');
+}
+
+// Handle table scroll indicators
+document.addEventListener('DOMContentLoaded', function() {
+    const tableScrollWrapper = document.querySelector('.table-scroll-wrapper');
+    if (tableScrollWrapper) {
+        function updateScrollIndicators() {
+            const scrollLeft = tableScrollWrapper.scrollLeft;
+            const scrollWidth = tableScrollWrapper.scrollWidth;
+            const clientWidth = tableScrollWrapper.clientWidth;
+            const maxScroll = scrollWidth - clientWidth;
+
+            // Add/remove classes based on scroll position
+            if (scrollLeft > 10) {
+                tableScrollWrapper.classList.add('scrolled-left');
+            } else {
+                tableScrollWrapper.classList.remove('scrolled-left');
+            }
+
+            if (scrollLeft < maxScroll - 10) {
+                tableScrollWrapper.classList.add('scrolled-right');
+            } else {
+                tableScrollWrapper.classList.remove('scrolled-right');
+            }
+        }
+
+        // Update on scroll
+        tableScrollWrapper.addEventListener('scroll', updateScrollIndicators);
+
+        // Update on load and resize
+        updateScrollIndicators();
+        window.addEventListener('resize', updateScrollIndicators);
+    }
+});
+</script>
+{% endblock %}
+
+{% block body %}
+
+<div class="dashboard-header">
+    <div class="dashboard-header-left">
+        {% if boutique.logoUrl %}
+            <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}">
+        {% endif %}
+        <div>
+            <h1>Commandes</h1>
+            <p>{{ boutique.name }}</p>
+        </div>
+    </div>
+    <div class="dashboard-header-stats">
+        <div class="dashboard-stat">
+            <div class="dashboard-stat-value primary">{{ totalOrders }}</div>
+            <div class="dashboard-stat-label">Commandes</div>
+        </div>
+        <div class="dashboard-stat">
+            <div class="dashboard-stat-value success">{{ totalRevenue|number_format(2, ',', ' ') }} €</div>
+            <div class="dashboard-stat-label">CA Total</div>
+        </div>
+    </div>
+</div>
+
+<div class="filters-card" style="margin-bottom: 20px;">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Période</h3>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="{{ path('app_boutique_orders', {id: boutique.id, period: '7'}) }}"
+           class="btn-filter {{ period == '7' ? 'primary' : 'secondary' }}">
+            7 jours
+        </a>
+        <a href="{{ path('app_boutique_orders', {id: boutique.id, period: '30'}) }}"
+           class="btn-filter {{ period == '30' ? 'primary' : 'secondary' }}">
+            30 jours
+        </a>
+        <a href="{{ path('app_boutique_orders', {id: boutique.id, period: '90'}) }}"
+           class="btn-filter {{ period == '90' ? 'primary' : 'secondary' }}">
+            90 jours
+        </a>
+        <a href="{{ path('app_boutique_orders', {id: boutique.id, period: ''}) }}"
+           class="btn-filter {{ period == '' ? 'primary' : 'secondary' }}">
+            Tout
+        </a>
+    </div>
+</div>
+
+<div class="filters-card">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 0;">Filtres</h3>
+    <form method="get">
+        {% if period %}
+            <input type="hidden" name="period" value="{{ period }}">
+        {% endif %}
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label for="search">Recherche</label>
+                <input type="text" id="search" name="search" value="{{ search }}" placeholder="Référence, ID...">
+            </div>
+            <div class="filter-group">
+                <label for="status">Statut</label>
+                <select id="status" name="status">
+                    <option value="">Tous</option>
+                    <option value="1" {{ status == '1' ? 'selected' : '' }}>En attente</option>
+                    <option value="2" {{ status == '2' ? 'selected' : '' }}>Paiement accepté</option>
+                    <option value="3" {{ status == '3' ? 'selected' : '' }}>Préparation</option>
+                    <option value="4" {{ status == '4' ? 'selected' : '' }}>Expédié</option>
+                    <option value="5" {{ status == '5' ? 'selected' : '' }}>Livré</option>
+                    <option value="6" {{ status == '6' ? 'selected' : '' }}>Annulé</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="start_date">Date début</label>
+                <input type="date" id="start_date" name="start_date" value="{{ startDate }}">
+            </div>
+            <div class="filter-group">
+                <label for="end_date">Date fin</label>
+                <input type="date" id="end_date" name="end_date" value="{{ endDate }}">
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn-filter primary">Appliquer</button>
+            <a href="{{ path('app_boutique_orders', {id: boutique.id, reset: 1}) }}" class="btn-filter secondary">Réinitialiser</a>
+        </div>
+    </form>
+</div>
+
+<div class="orders-table-card">
+    {% if orders is empty %}
+        <div class="empty-state">
+            <svg width="80" height="80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+            </svg>
+            <h3>Aucune commande</h3>
+            <p>Aucune commande ne correspond aux critères de recherche</p>
+        </div>
+    {% else %}
+        <div class="table-scroll-wrapper">
+            <table class="orders-table">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'reference', order: (sort == 'reference' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            Référence
+                            <span class="sort-icon {{ sort == 'reference' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'reference' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'reference' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'order_id', order: (sort == 'order_id' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            ID PrestaShop
+                            <span class="sort-icon {{ sort == 'order_id' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'order_id' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'order_id' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'date', order: (sort == 'date' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            Date
+                            <span class="sort-icon {{ sort == 'date' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'date' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'date' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'amount', order: (sort == 'amount' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            Montant
+                            <span class="sort-icon {{ sort == 'amount' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'amount' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'amount' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'margin', order: (sort == 'margin' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            Marge
+                            <span class="sort-icon {{ sort == 'margin' ? 'active' : '' }}">
+                                <span class="sort-up">{{ (sort == 'margin' and order == 'asc') ? '▲' : '△' }}</span>
+                                <span class="sort-down">{{ (sort == 'margin' and order == 'desc') ? '▼' : '▽' }}</span>
+                            </span>
+                        </a>
+                    </th>
+                    <th>Paiement</th>
+                    <th>Statut</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>
+                        <div class="order-ref">{{ order.reference ?: 'N/A' }}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--gray-700);">#{{ order.orderId }}</div>
+                    </td>
+                    <td>
+                        <div class="order-date">
+                            {{ order.orderDate|date('d/m/Y à H:i') }}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="order-amount">{{ order.totalPaid|number_format(2, ',', ' ') }} €</div>
+                    </td>
+                    <td>
+                        {% if order.hasMarginData %}
+                            {% set margin = order.marginPercent %}
+                            {% set marginClass = 'margin-unavailable' %}
+                            {% if margin >= 50 %}
+                                {% set marginClass = 'margin-excellent' %}
+                            {% elseif margin >= 30 %}
+                                {% set marginClass = 'margin-good' %}
+                            {% elseif margin >= 15 %}
+                                {% set marginClass = 'margin-fair' %}
+                            {% elseif margin >= 0 %}
+                                {% set marginClass = 'margin-low' %}
+                            {% endif %}
+                            <span class="margin-badge {{ marginClass }}">{{ margin }}%</span>
+                        {% else %}
+                            <span class="margin-badge margin-unavailable">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ order.payment ?: 'N/A' }}</td>
+                    <td>
+                        {% set statusClass = 'pending' %}
+                        {% set statusText = 'En attente' %}
+                        {% if order.currentState == '2' %}
+                            {% set statusClass = 'processing' %}
+                            {% set statusText = 'Paiement OK' %}
+                        {% elseif order.currentState == '3' %}
+                            {% set statusClass = 'processing' %}
+                            {% set statusText = 'Préparation' %}
+                        {% elseif order.currentState == '4' %}
+                            {% set statusClass = 'processing' %}
+                            {% set statusText = 'Expédié' %}
+                        {% elseif order.currentState == '5' %}
+                            {% set statusClass = 'completed' %}
+                            {% set statusText = 'Livré' %}
+                        {% elseif order.currentState == '6' %}
+                            {% set statusClass = 'cancelled' %}
+                            {% set statusText = 'Annulé' %}
+                        {% endif %}
+                        <span class="status-badge status-{{ statusClass }}">{{ statusText }}</span>
+                    </td>
+                    <td>
+                        <a href="{{ path('app_order_detail', {boutiqueId: boutique.id, orderId: order.id}) }}" class="btn-view">Détails</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        {% if totalPages > 1 %}
+        <div class="pagination">
+            {% if currentPage > 1 %}
+                <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage - 1, period: period, search: search, status: status, start_date: startDate, end_date: endDate}) }}">← Précédent</a>
+            {% endif %}
+
+            {% for page in 1..totalPages %}
+                {% if page == currentPage %}
+                    <span class="current">{{ page }}</span>
+                {% elseif page == 1 or page == totalPages or (page >= currentPage - 2 and page <= currentPage + 2) %}
+                    <a href="{{ path('app_boutique_orders', {id: boutique.id, page: page, period: period, search: search, status: status, start_date: startDate, end_date: endDate}) }}">{{ page }}</a>
+                {% elseif page == currentPage - 3 or page == currentPage + 3 %}
+                    <span>...</span>
+                {% endif %}
+            {% endfor %}
+
+            {% if currentPage < totalPages %}
+                <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage + 1, period: period, search: search, status: status, start_date: startDate, end_date: endDate}) }}">Suivant →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% endblock %}

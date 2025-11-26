@@ -2,18 +2,8 @@
 
 {% block title %}Modifier un Utilisateur - PrestaBoost{% endblock %}
 
-{% block navbar %}
-<div class="container">
-    <nav class="navbar">
-        <div class="navbar-brand">PrestaBoost</div>
-        <ul class="navbar-menu">
-            <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
-            <li><a href="{{ path('app_boutiques') }}">Mes Boutiques</a></li>
-            <li><a href="{{ path('app_users') }}" class="active">Utilisateurs</a></li>
-            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
-        </ul>
-    </nav>
-</div>
+{% block sidebar %}
+    {% include '_sidebar_global.html.twig' with {'activeRoute': 'app_users'} %}
 {% endblock %}
 
 {% block body %}
@@ -128,14 +118,16 @@
                         <p style="opacity: 0.6; margin: 0;">Aucune boutique disponible</p>
                     </div>
                 {% else %}
-                    {% set userBoutiques = {} %}
-                    {% for boutiqueUser in user.boutiqueUsers %}
-                        {% set userBoutiques = userBoutiques|merge({(boutiqueUser.boutique.id): boutiqueUser.role}) %}
-                    {% endfor %}
-
                     <div style="display: flex; flex-direction: column; gap: 10px;">
                         {% for boutique in boutiques %}
-                            {% set currentRole = userBoutiques[boutique.id] ?? null %}
+                            {# Find the role for this boutique by directly iterating through boutiqueUsers #}
+                            {% set currentRole = null %}
+                            {% for boutiqueUser in user.boutiqueUsers %}
+                                {% if boutiqueUser.boutique.id == boutique.id %}
+                                    {% set currentRole = boutiqueUser.role %}
+                                {% endif %}
+                            {% endfor %}
+
                             <div style="padding: 15px; background-color: var(--surface-light); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
                                 <div style="flex: 1;">
                                     <strong style="display: block; margin-bottom: 5px;">{{ boutique.name }}</strong>

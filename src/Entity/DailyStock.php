@@ -29,6 +29,9 @@ class DailyStock
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $category = null;
+
     #[ORM\Column]
     private ?int $quantity = null;
 
@@ -84,6 +87,18 @@ class DailyStock
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getCategory(): ?string
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?string $category): static
+    {
+        $this->category = $category;
 
         return $this;
     }

@@ -104,8 +104,16 @@ class UserManagementController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_user_edit')]
-    public function edit(int $id, UserRepository $userRepository, BoutiqueRepository $boutiqueRepository): Response
-    {
+    public function edit(
+        int $id,
+        UserRepository $userRepository,
+        BoutiqueRepository $boutiqueRepository,
+        EntityManagerInterface $entityManager
+    ): Response {
+        // Clear the entity manager to force a fresh query from the database
+        // This ensures we get the latest boutique assignments after updates
+        $entityManager->clear();
+
         $user = $userRepository->find($id);
 
         if (!$user) {
@@ -175,6 +183,9 @@ class UserManagementController extends AbstractController
         foreach ($user->getBoutiqueUsers() as $boutiqueUser) {
             $entityManager->remove($boutiqueUser);
         }
+
+        // Flush deletions before creating new assignments to avoid unique constraint violation
+        $entityManager->flush();
 
         // Assign new boutiques
         foreach ($boutiqueIds as $boutiqueData) {

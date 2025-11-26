@@ -37,7 +37,8 @@ class CollectPrestashopDataCommand extends Command
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Collect data for all boutiques')
             ->addOption('branding', null, InputOption::VALUE_NONE, 'Also collect branding data (logo, colors, etc.)')
             ->addOption('orders', 'o', InputOption::VALUE_NONE, 'Also collect orders data')
-            ->addOption('orders-days', null, InputOption::VALUE_OPTIONAL, 'Number of days to collect orders for', 30);
+            ->addOption('orders-days', null, InputOption::VALUE_OPTIONAL, 'Number of days to collect orders for (0 = all orders)', 30)
+            ->addOption('orders-all', null, InputOption::VALUE_NONE, 'Collect all orders (shortcut for --orders-days=0)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -48,7 +49,8 @@ class CollectPrestashopDataCommand extends Command
         $collectAll = $input->getOption('all');
         $collectBranding = $input->getOption('branding');
         $collectOrders = $input->getOption('orders');
-        $ordersDays = (int) $input->getOption('orders-days');
+        $ordersAll = $input->getOption('orders-all');
+        $ordersDays = $ordersAll ? 0 : (int) $input->getOption('orders-days');
 
         // Determine which boutiques to process
         $boutiques = [];

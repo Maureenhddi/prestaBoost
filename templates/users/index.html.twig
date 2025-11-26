@@ -2,80 +2,109 @@
 
 {% block title %}Gestion des Utilisateurs - PrestaBoost{% endblock %}
 
-{% block navbar %}
-<div class="container">
-    <nav class="navbar">
-        <div class="navbar-brand">PrestaBoost</div>
-        <ul class="navbar-menu">
-            <li><a href="{{ path('app_dashboard') }}">Dashboard</a></li>
-            <li><a href="{{ path('app_users') }}" class="active">Utilisateurs</a></li>
-            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
-        </ul>
-    </nav>
-</div>
+{% block sidebar %}
+    {% include '_sidebar_global.html.twig' with {'activeRoute': 'app_users'} %}
 {% endblock %}
 
 {% block body %}
-<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-    <h1 style="font-size: 32px; color: var(--dark-text);">Gestion des Utilisateurs</h1>
+<div class="page-header">
+    <h1>Gestion des Utilisateurs</h1>
     <a href="{{ path('app_user_new') }}" class="btn btn-primary">Créer un utilisateur</a>
 </div>
 
-<div class="card" style="padding: 0; overflow: hidden;">
-    <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: var(--surface-light); border-bottom: 2px solid var(--surface-dark);">
-                <th style="padding: 20px; text-align: left; font-weight: 600; color: var(--dark-text);">Nom</th>
-                <th style="padding: 20px; text-align: left; font-weight: 600; color: var(--dark-text);">Email</th>
-                <th style="padding: 20px; text-align: left; font-weight: 600; color: var(--dark-text);">Rôle</th>
-                <th style="padding: 20px; text-align: left; font-weight: 600; color: var(--dark-text);">Boutiques</th>
-                <th style="padding: 20px; text-align: right; font-weight: 600; color: var(--dark-text);">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-                <tr style="border-bottom: 1px solid var(--surface-light);">
-                    <td style="padding: 20px;">
-                        <div style="font-weight: 500; color: var(--dark-text);">{{ user.firstName }} {{ user.lastName }}</div>
-                    </td>
-                    <td style="padding: 20px;">
-                        <div style="color: var(--dark-text); opacity: 0.8;">{{ user.email }}</div>
-                    </td>
-                    <td style="padding: 20px;">
-                        {% if user.isSuperAdmin() %}
-                            <span class="badge" style="background-color: var(--primary); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Super Admin</span>
-                        {% else %}
-                            <span class="badge" style="background-color: var(--surface-light); color: var(--dark-text); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">Utilisateur</span>
-                        {% endif %}
-                    </td>
-                    <td style="padding: 20px;">
-                        <div style="color: var(--dark-text); opacity: 0.8;">
-                            {% if user.isSuperAdmin() %}
-                                Toutes
-                            {% else %}
-                                {{ user.boutiqueUsers|length }} boutique(s)
-                            {% endif %}
-                        </div>
-                    </td>
-                    <td style="padding: 20px; text-align: right;">
-                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                            <a href="{{ path('app_user_edit', {id: user.id}) }}" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">Modifier</a>
-                            {% if user.id != app.user.id %}
-                                <form method="post" action="{{ path('app_user_delete', {id: user.id}) }}" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?');">
-                                    <button type="submit" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px; background-color: #ef4444; border-color: #ef4444;">Supprimer</button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-            {% else %}
+<div class="users-table-card">
+    <div class="table-scroll-wrapper">
+        <table class="users-table">
+            <thead>
                 <tr>
-                    <td colspan="5" style="padding: 60px; text-align: center;">
-                        <p style="color: var(--dark-text); opacity: 0.6; margin: 0;">Aucun utilisateur trouvé</p>
-                    </td>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>Boutiques</th>
+                    <th class="actions-column">Actions</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td data-label="Nom">
+                            <div class="user-name">{{ user.firstName }} {{ user.lastName }}</div>
+                        </td>
+                        <td data-label="Email">
+                            <div class="user-email">{{ user.email }}</div>
+                        </td>
+                        <td data-label="Rôle">
+                            {% if user.isSuperAdmin() %}
+                                <span class="role-badge admin">Super Admin</span>
+                            {% else %}
+                                <span class="role-badge user">Utilisateur</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Boutiques">
+                            <div class="user-boutiques">
+                                {% if user.isSuperAdmin() %}
+                                    Toutes
+                                {% else %}
+                                    {{ user.boutiqueUsers|length }} boutique(s)
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td data-label="Actions" class="actions-column">
+                            <div class="user-actions">
+                                <a href="{{ path('app_user_edit', {id: user.id}) }}" class="btn btn-secondary btn-sm">Modifier</a>
+                                {% if user.id != app.user.id %}
+                                    <form method="post" action="{{ path('app_user_delete', {id: user.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?');">
+                                        <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <p>Aucun utilisateur trouvé</p>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableScrollWrapper = document.querySelector('.users-table-card .table-scroll-wrapper');
+    if (tableScrollWrapper) {
+        function updateScrollIndicators() {
+            const scrollLeft = tableScrollWrapper.scrollLeft;
+            const scrollWidth = tableScrollWrapper.scrollWidth;
+            const clientWidth = tableScrollWrapper.clientWidth;
+            const maxScroll = scrollWidth - clientWidth;
+
+            // Add/remove classes based on scroll position
+            if (scrollLeft > 10) {
+                tableScrollWrapper.classList.add('scrolled-left');
+            } else {
+                tableScrollWrapper.classList.remove('scrolled-left');
+            }
+
+            if (scrollLeft < maxScroll - 10) {
+                tableScrollWrapper.classList.add('scrolled-right');
+            } else {
+                tableScrollWrapper.classList.remove('scrolled-right');
+            }
+        }
+
+        // Update on scroll
+        tableScrollWrapper.addEventListener('scroll', updateScrollIndicators);
+
+        // Update on load and resize
+        updateScrollIndicators();
+        window.addEventListener('resize', updateScrollIndicators);
+    }
+});
+</script>
 {% endblock %}

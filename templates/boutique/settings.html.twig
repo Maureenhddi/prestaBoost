@@ -24,28 +24,8 @@
     </style>
 {% endblock %}
 
-{% block navbar %}
-<div class="container">
-    <nav class="navbar">
-        <div class="navbar-brand">
-            {% if boutique.logoUrl %}
-                <img src="{{ boutique.logoUrl }}" alt="{{ boutique.name }}" style="max-height: 40px;">
-            {% else %}
-                {{ boutique.name }}
-            {% endif %}
-        </div>
-        <ul class="navbar-menu">
-            <li><a href="{{ path('app_dashboard') }}">← Mes Boutiques</a></li>
-            <li><a href="{{ path('app_boutique_dashboard', {id: boutique.id}) }}">Dashboard</a></li>
-            <li><a href="{{ path('app_boutique_stocks', {id: boutique.id}) }}">Stocks</a></li>
-            <li><a href="{{ path('app_boutique_settings', {id: boutique.id}) }}" class="active">Paramètres</a></li>
-            {% if app.user.isSuperAdmin() %}
-                <li><a href="{{ path('app_users') }}">Utilisateurs</a></li>
-            {% endif %}
-            <li><a href="{{ path('app_logout') }}">Déconnexion</a></li>
-        </ul>
-    </nav>
-</div>
+{% block sidebar %}
+    {% include '_sidebar.html.twig' with {'boutique': boutique, 'activeRoute': 'app_boutique_settings'} %}
 {% endblock %}
 
 {% block body %}
@@ -69,6 +49,12 @@
                 <div class="input-group">
                     <label for="domain">Domaine</label>
                     <input type="url" id="domain" name="domain" value="{{ boutique.domain }}" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="lowStockThreshold">Seuil de stock faible</label>
+                    <input type="number" id="lowStockThreshold" name="lowStockThreshold" value="{{ boutique.lowStockThreshold }}" min="1" max="100" required>
+                    <small class="help-text">Définit le niveau de quantité en dessous duquel un produit est considéré en stock faible (entre 1 et 100)</small>
                 </div>
             </div>
 
@@ -115,6 +101,69 @@
                 <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
             </div>
         </form>
+    </div>
+
+    <div class="settings-card" style="margin-top: 30px;">
+        <div class="settings-section" style="border: none; padding-bottom: 0;">
+            <h2>Synchronisation des données</h2>
+            <p class="section-description">Mettez à jour manuellement les stocks et commandes depuis PrestaShop.</p>
+
+            <!-- Sync Status Banner -->
+            <div id="sync-status-banner" style="display: none; margin-bottom: 20px; padding: 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div id="sync-spinner" style="width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 16px; margin-bottom: 5px;" id="sync-status-title">Synchronisation en cours...</div>
+                        <div style="font-size: 14px; opacity: 0.9;" id="sync-status-message">Récupération des données depuis PrestaShop...</div>
+                    </div>
+                    <div id="sync-status-stats" style="text-align: right; font-size: 14px; font-weight: 600;">
+                        <div><span id="orders-count">0</span> commandes</div>
+                        <div><span id="stocks-count">0</span> stocks</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sync-options">
+                <div class="sync-option">
+                    <div class="sync-info">
+                        <h3>Synchronisation rapide</h3>
+                        <p>Synchronise les stocks et les commandes des 7 derniers jours. Durée estimée: quelques minutes.</p>
+                    </div>
+                    <form method="post" action="{{ path('app_boutique_settings_sync', {id: boutique.id}) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-primary" onclick="startSyncMonitoring('quick')">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="margin-right: 8px;">
+                                <path d="M13.65 2.35C12.2 0.9 10.21 0 8 0C3.58 0 0.01 3.58 0.01 8C0.01 12.42 3.58 16 8 16C11.73 16 14.84 13.45 15.73 10H13.65C12.83 12.33 10.61 14 8 14C4.69 14 2 11.31 2 8C2 4.69 4.69 2 8 2C9.66 2 11.14 2.69 12.22 3.78L9 7H16V0L13.65 2.35Z" fill="currentColor"/>
+                            </svg>
+                            Synchroniser maintenant
+                        </button>
+                    </form>
+                </div>
+
+                <div class="sync-option warning-option">
+                    <div class="sync-info">
+                        <h3>Synchronisation complète</h3>
+                        <p>Synchronise tous les stocks et TOUTES les commandes historiques. Cette opération peut prendre plusieurs heures.</p>
+                    </div>
+                    <form method="post" action="{{ path('app_boutique_settings_sync_all', {id: boutique.id}) }}" style="display: inline;" onsubmit="if(confirm('Cette opération peut prendre plusieurs heures et va synchroniser tout l\'historique de commandes. Êtes-vous sûr de vouloir continuer ?')) { startSyncMonitoring('full'); return true; } return false;">
+                        <button type="submit" class="btn btn-warning">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="margin-right: 8px;">
+                                <path d="M13.65 2.35C12.2 0.9 10.21 0 8 0C3.58 0 0.01 3.58 0.01 8C0.01 12.42 3.58 16 8 16C11.73 16 14.84 13.45 15.73 10H13.65C12.83 12.33 10.61 14 8 14C4.69 14 2 11.31 2 8C2 4.69 4.69 2 8 2C9.66 2 11.14 2.69 12.22 3.78L9 7H16V0L13.65 2.35Z" fill="currentColor"/>
+                            </svg>
+                            Synchroniser tout l'historique
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="sync-info-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink: 0;">
+                    <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V9H11V15ZM11 7H9V5H11V7Z" fill="currentColor" opacity="0.5"/>
+                </svg>
+                <div>
+                    <strong>Information importante:</strong> Lorsque vous créez une nouvelle boutique, les données des 30 derniers jours sont automatiquement synchronisées. Utilisez ces boutons uniquement si vous souhaitez mettre à jour les données ou récupérer l'historique complet.
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -242,12 +291,239 @@
 .settings-actions .btn {
     flex: 1;
 }
+
+.section-description {
+    color: var(--dark-text);
+    opacity: 0.6;
+    margin-bottom: 30px;
+    font-size: 15px;
+}
+
+.sync-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.sync-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: var(--surface-light);
+    border-radius: 12px;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.sync-option:hover {
+    border-color: var(--primary);
+    background: white;
+}
+
+.warning-option:hover {
+    border-color: #f59e0b;
+}
+
+.sync-info {
+    flex: 1;
+}
+
+.sync-info h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 8px;
+}
+
+.sync-info p {
+    font-size: 14px;
+    color: var(--dark-text);
+    opacity: 0.6;
+    margin: 0;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.sync-info-box {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    color: var(--dark-text);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.sync-info-box svg {
+    color: #3b82f6;
+}
+
+.sync-info-box strong {
+    font-weight: 600;
+}
 </style>
 
 <script>
 document.getElementById('primaryColor').addEventListener('input', function(e) {
     document.getElementById('primaryColorHex').value = e.target.value;
 });
+
+// Sync progress tracking
+let initialOrdersCount = null;
+let initialStocksCount = null;
+let syncCheckInterval = null;
+let syncType = 'quick';
+let noChangeCount = 0;
+
+function startSyncMonitoring(type) {
+    syncType = type;
+    // Show banner immediately
+    const banner = document.getElementById('sync-status-banner');
+    banner.style.display = 'block';
+
+    // Scroll to banner
+    banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Start checking after 2 seconds (give time for the request to be processed)
+    setTimeout(() => {
+        fetchInitialCounts();
+        syncCheckInterval = setInterval(checkSyncProgress, 5000); // Check every 5 seconds
+    }, 2000);
+}
+
+function fetchInitialCounts() {
+    fetch('{{ path('app_boutique_settings_sync_status', {id: boutique.id}) }}')
+        .then(response => response.json())
+        .then(data => {
+            initialOrdersCount = data.orders_count;
+            initialStocksCount = data.stocks_count;
+            updateSyncUI(data.orders_count, data.stocks_count, 0, 0, true);
+        })
+        .catch(error => console.error('Error fetching initial counts:', error));
+}
+
+function checkSyncProgress() {
+    fetch('{{ path('app_boutique_settings_sync_status', {id: boutique.id}) }}')
+        .then(response => response.json())
+        .then(data => {
+            const ordersDiff = data.orders_count - initialOrdersCount;
+            const stocksDiff = data.stocks_count - initialStocksCount;
+
+            // Check if counts have changed
+            if (ordersDiff === 0 && stocksDiff === 0) {
+                noChangeCount++;
+            } else {
+                noChangeCount = 0;
+            }
+
+            updateSyncUI(data.orders_count, data.stocks_count, ordersDiff, stocksDiff, false);
+
+            // Stop checking if no changes for 30 seconds (6 checks)
+            if (noChangeCount >= 6) {
+                syncCompleted(ordersDiff, stocksDiff);
+            }
+        })
+        .catch(error => console.error('Error checking sync progress:', error));
+}
+
+function updateSyncUI(ordersCount, stocksCount, ordersDiff, stocksDiff, isInitial) {
+    const banner = document.getElementById('sync-status-banner');
+    const title = document.getElementById('sync-status-title');
+    const message = document.getElementById('sync-status-message');
+    const ordersCountEl = document.getElementById('orders-count');
+    const stocksCountEl = document.getElementById('stocks-count');
+
+    ordersCountEl.textContent = ordersCount.toLocaleString();
+    stocksCountEl.textContent = stocksCount.toLocaleString();
+
+    if (isInitial) {
+        title.textContent = 'Synchronisation lancée...';
+        message.textContent = 'Récupération des données depuis PrestaShop. Cela peut prendre plusieurs minutes.';
+    } else if (ordersDiff > 0 || stocksDiff > 0) {
+        title.textContent = 'Synchronisation en cours...';
+        const parts = [];
+        if (ordersDiff > 0) parts.push(`+${ordersDiff} commandes`);
+        if (stocksDiff > 0) parts.push(`+${stocksDiff} stocks`);
+        message.textContent = `${parts.join(' • ')} synchronisées depuis le début.`;
+    }
+}
+
+function syncCompleted(ordersDiff, stocksDiff) {
+    clearInterval(syncCheckInterval);
+
+    const banner = document.getElementById('sync-status-banner');
+    const spinner = document.getElementById('sync-spinner');
+    const title = document.getElementById('sync-status-title');
+    const message = document.getElementById('sync-status-message');
+
+    // Change to success style
+    banner.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+    spinner.style.display = 'none';
+    title.textContent = '✓ Synchronisation terminée !';
+
+    const parts = [];
+    if (ordersDiff > 0) parts.push(`${ordersDiff} commandes`);
+    if (stocksDiff > 0) parts.push(`${stocksDiff} stocks`);
+
+    if (parts.length > 0) {
+        message.textContent = `${parts.join(' et ')} ont été synchronisées avec succès.`;
+    } else {
+        message.textContent = 'Aucune nouvelle donnée à synchroniser. Toutes vos données sont à jour.';
+    }
+
+    // Hide banner after 10 seconds
+    setTimeout(() => {
+        banner.style.display = 'none';
+    }, 10000);
+}
+
+// Auto-start global monitoring if we just submitted a sync
+{% for message in app.flashes('warning') %}
+    {% if 'Synchronisation' in message %}
+        if (window.startGlobalSync) {
+            window.startGlobalSync({{ boutique.id }});
+        }
+    {% endif %}
+{% endfor %}
+
+{% for message in app.flashes('success') %}
+    {% if 'Synchronisation' in message %}
+        if (window.startGlobalSync) {
+            window.startGlobalSync({{ boutique.id }});
+        }
+    {% endif %}
+{% endfor %}
 </script>
+
+<style>
+@keyframes slideIn {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
 
 {% endblock %}

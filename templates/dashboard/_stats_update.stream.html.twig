@@ -1,0 +1,11 @@
+<turbo-stream action="replace" target="order-count-{{ boutiqueId }}">
+    <template>
+        <span id="order-count-{{ boutiqueId }}" class="stat-number">{{ orderCount }}</span>
+    </template>
+</turbo-stream>
+
+<turbo-stream action="replace" target="revenue-amount-{{ boutiqueId }}">
+    <template>
+        <span id="revenue-amount-{{ boutiqueId }}" class="stat-number">{{ revenue|number_format(2, ',', ' ') }} €</span>
+    </template>
+</turbo-stream>

@@ -44,6 +44,9 @@ class Boutique
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $customCss = null;
 
+    #[ORM\Column(type: Types::INTEGER, options: ['default' => 10])]
+    private int $lowStockThreshold = 10;
+
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -178,6 +181,18 @@ class Boutique
     public function setCustomCss(?string $customCss): static
     {
         $this->customCss = $customCss;
+
+        return $this;
+    }
+
+    public function getLowStockThreshold(): int
+    {
+        return $this->lowStockThreshold;
+    }
+
+    public function setLowStockThreshold(int $lowStockThreshold): static
+    {
+        $this->lowStockThreshold = max(1, min(100, $lowStockThreshold)); // Between 1 and 100
 
         return $this;
     }

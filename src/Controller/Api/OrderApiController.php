@@ -51,24 +51,25 @@ class OrderApiController extends AbstractController
         $previousStart = $periodDates['previousStart'];
         $previousEnd = $periodDates['previousEnd'];
 
-        // Get current period data
-        $currentRevenue = $orderRepository->getTotalRevenue($boutique->getId(), $currentStart, $currentEnd);
-        $currentOrderCount = $orderRepository->countOrders($boutique->getId(), $currentStart, $currentEnd);
-
-        // Get previous period data
-        $previousRevenue = $orderRepository->getTotalRevenue($boutique->getId(), $previousStart, $previousEnd);
-        $previousOrderCount = $orderRepository->countOrders($boutique->getId(), $previousStart, $previousEnd);
+        // Get all statistics in ONE optimized query (4 queries -> 1 query)
+        $stats = $orderRepository->getStatistics(
+            $boutique->getId(),
+            $currentStart,
+            $currentEnd,
+            $previousStart,
+            $previousEnd
+        );
 
         // Calculate variations
-        $revenueVariation = $previousRevenue > 0
-            ? round((($currentRevenue - $previousRevenue) / $previousRevenue) * 100, 1)
+        $revenueVariation = $stats['previousRevenue'] > 0
+            ? round((($stats['currentRevenue'] - $stats['previousRevenue']) / $stats['previousRevenue']) * 100, 1)
             : 0;
 
-        $orderCountVariation = $previousOrderCount > 0
-            ? round((($currentOrderCount - $previousOrderCount) / $previousOrderCount) * 100, 1)
+        $orderCountVariation = $stats['previousOrderCount'] > 0
+            ? round((($stats['currentOrderCount'] - $stats['previousOrderCount']) / $stats['previousOrderCount']) * 100, 1)
             : 0;
 
-        // Get recent orders
+        // Get recent orders (still separate query but optimized with LIMIT)
         $recentOrders = $orderRepository->getRecentOrders($boutique->getId(), 10);
 
         // Format recent orders for JSON
@@ -84,17 +85,17 @@ class OrderApiController extends AbstractController
             ];
         }, $recentOrders);
 
-        return $this->json([
+        $response = $this->json([
             'success' => true,
             'current' => [
-                'revenue' => $currentRevenue,
-                'orderCount' => $currentOrderCount,
+                'revenue' => $stats['currentRevenue'],
+                'orderCount' => $stats['currentOrderCount'],
                 'startDate' => $currentStart->format('Y-m-d'),
                 'endDate' => $currentEnd->format('Y-m-d'),
             ],
             'previous' => [
-                'revenue' => $previousRevenue,
-                'orderCount' => $previousOrderCount,
+                'revenue' => $stats['previousRevenue'],
+                'orderCount' => $stats['previousOrderCount'],
                 'startDate' => $previousStart->format('Y-m-d'),
                 'endDate' => $previousEnd->format('Y-m-d'),
             ],
@@ -104,6 +105,12 @@ class OrderApiController extends AbstractController
             ],
             'recentOrders' => $formattedOrders,
         ]);
+
+        // Cache for 2 minutes to improve performance
+        $response->setSharedMaxAge(120);
+        $response->headers->addCacheControlDirective('must-revalidate', true);
+
+        return $response;
     }
 
     private function getPeriodDates(string $period, \DateTimeImmutable $now): ?array

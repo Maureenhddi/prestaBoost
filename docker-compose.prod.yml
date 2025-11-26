@@ -54,8 +54,12 @@ services:
       JWT_PASSPHRASE: ${JWT_PASSPHRASE}
       CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN}
       DEFAULT_URI: https://${DOMAIN}
+      MERCURE_URL: http://mercure/.well-known/mercure
+      MERCURE_PUBLIC_URL: https://${DOMAIN}/.well-known/mercure
+      MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET}
     depends_on:
       - postgres
+      - mercure
     networks:
       - prestaboost_network
     user: root
@@ -72,6 +76,38 @@ services:
       - postgres_data_prod:/var/lib/postgresql/data
     networks:
       - prestaboost_network
+
+  mercure:
+    image: dunglas/mercure:v0.15
+    container_name: prestaboost_mercure_prod
+    restart: always
+    environment:
+      SERVER_NAME: ':80'
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_JWT_SECRET}
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins https://${DOMAIN}
+        anonymous
+    networks:
+      - prestaboost_network
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+
+      # HTTP
+      - "traefik.http.routers.mercure.rule=Host(`${DOMAIN}`) && PathPrefix(`/.well-known/mercure`)"
+      - "traefik.http.routers.mercure.entrypoints=web"
+      - "traefik.http.routers.mercure.middlewares=redirect-to-https"
+
+      # HTTPS
+      - "traefik.http.routers.mercure-secure.rule=Host(`${DOMAIN}`) && PathPrefix(`/.well-known/mercure`)"
+      - "traefik.http.routers.mercure-secure.entrypoints=websecure"
+      - "traefik.http.routers.mercure-secure.tls=true"
+      - "traefik.http.routers.mercure-secure.tls.certresolver=letsencrypt"
+
+      # Service
+      - "traefik.http.services.mercure.loadbalancer.server.port=80"
 
 volumes:
   postgres_data_prod:

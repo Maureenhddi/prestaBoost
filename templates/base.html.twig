@@ -4,24 +4,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}PrestaBoost{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" href="/favicon.ico">
     <link rel="stylesheet" href="/css/main.css?v={{ 'now'|date('YmdHis') }}">
     {% block stylesheets %}{% endblock %}
 </head>
 <body>
-    {% block navbar %}{% endblock %}
+    <!-- Global Sync Progress Banner -->
+    <div id="global-sync-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; padding: 15px 20px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); animation: slideDown 0.3s ease;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 15px;">
+            <div id="global-sync-spinner" style="width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; font-size: 15px; margin-bottom: 3px;" id="global-sync-title">Synchronisation en cours...</div>
+                <div style="font-size: 13px; opacity: 0.9;" id="global-sync-message">Récupération des données depuis PrestaShop...</div>
+            </div>
+            <div id="global-sync-stats" style="text-align: right; font-size: 13px; font-weight: 600;">
+                <div><span id="global-orders-count">0</span> commandes</div>
+                <div><span id="global-stocks-count">0</span> stocks</div>
+            </div>
+        </div>
+    </div>
 
-    <div class="container">
-        {% for message in app.flashes('success') %}
-            <div class="alert alert-success">{{ message }}</div>
-        {% endfor %}
+    {% block sidebar %}{% endblock %}
 
-        {% for message in app.flashes('error') %}
-            <div class="alert alert-danger">{{ message }}</div>
-        {% endfor %}
+    <div class="main-content">
+        <div class="container" style="margin-top: 0;">
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success">{{ message }}</div>
+            {% endfor %}
 
-        {% block body %}{% endblock %}
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-danger">{{ message }}</div>
+            {% endfor %}
+
+            {% block body %}{% endblock %}
+        </div>
     </div>
 
     {% block javascripts %}{% endblock %}
+
+    <!-- Global Sync Monitoring Script -->
+    <script>
+    (function() {
+        let globalSyncInterval = null;
+        let initialOrdersCount = null;
+        let initialStocksCount = null;
+        let noChangeCount = 0;
+        let currentBoutiqueId = null;
+
+        function checkForActiveSyncs() {
+            // Check all boutiques in sessionStorage
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                if (key && key.startsWith('sync_in_progress_')) {
+                    const boutiqueId = key.replace('sync_in_progress_', '');
+                    if (sessionStorage.getItem(key) === 'true') {
+                        currentBoutiqueId = boutiqueId;
+                        startGlobalSyncMonitoring(boutiqueId);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function startGlobalSyncMonitoring(boutiqueId) {
+            const banner = document.getElementById('global-sync-banner');
+            if (!banner || globalSyncInterval) return; // Already monitoring
+
+            banner.style.display = 'block';
+
+            // Adjust body padding to account for fixed banner
+            document.body.style.paddingTop = '70px';
+
+            // Fetch initial counts
+            fetchSyncStatus(boutiqueId, true);
+
+            // Start periodic checks
+            globalSyncInterval = setInterval(() => {
+                fetchSyncStatus(boutiqueId, false);
+            }, 5000);
+        }
+
+        function fetchSyncStatus(boutiqueId, isInitial) {
+            fetch(`/boutique/${boutiqueId}/settings/sync-status`)
+                .then(response => response.json())
+                .then(data => {
+                    if (isInitial) {
+                        initialOrdersCount = data.orders_count;
+                        initialStocksCount = data.stocks_count;
+                    }
+
+                    const ordersDiff = data.orders_count - initialOrdersCount;
+                    const stocksDiff = data.stocks_count - initialStocksCount;
+
+                    // Check if counts have changed
+                    if (ordersDiff === 0 && stocksDiff === 0 && !isInitial) {
+                        noChangeCount++;
+                    } else {
+                        noChangeCount = 0;
+                    }
+
+                    updateGlobalSyncUI(data.orders_count, data.stocks_count, ordersDiff, stocksDiff, isInitial);
+
+                    // Stop checking if no changes for 30 seconds (6 checks)
+                    if (noChangeCount >= 6) {
+                        globalSyncCompleted(ordersDiff, stocksDiff);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching sync status:', error);
+                });
+        }
+
+        function updateGlobalSyncUI(ordersCount, stocksCount, ordersDiff, stocksDiff, isInitial) {
+            const title = document.getElementById('global-sync-title');
+            const message = document.getElementById('global-sync-message');
+            const ordersCountEl = document.getElementById('global-orders-count');
+            const stocksCountEl = document.getElementById('global-stocks-count');
+
+            if (ordersCountEl) ordersCountEl.textContent = ordersCount.toLocaleString();
+            if (stocksCountEl) stocksCountEl.textContent = stocksCount.toLocaleString();
+
+            if (isInitial) {
+                if (title) title.textContent = 'Synchronisation lancée...';
+                if (message) message.textContent = 'Récupération des données depuis PrestaShop. Visible sur toutes les pages.';
+            } else if (ordersDiff > 0 || stocksDiff > 0) {
+                if (title) title.textContent = 'Synchronisation en cours...';
+                const parts = [];
+                if (ordersDiff > 0) parts.push(`+${ordersDiff} commandes`);
+                if (stocksDiff > 0) parts.push(`+${stocksDiff} stocks`);
+                if (message) message.textContent = `${parts.join(' • ')} synchronisées depuis le début.`;
+            }
+        }
+
+        function globalSyncCompleted(ordersDiff, stocksDiff) {
+            clearInterval(globalSyncInterval);
+            globalSyncInterval = null;
+
+            const banner = document.getElementById('global-sync-banner');
+            const spinner = document.getElementById('global-sync-spinner');
+            const title = document.getElementById('global-sync-title');
+            const message = document.getElementById('global-sync-message');
+
+            // Change to success style
+            if (banner) banner.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            if (spinner) spinner.style.display = 'none';
+            if (title) title.textContent = '✓ Synchronisation terminée !';
+
+            const parts = [];
+            if (ordersDiff > 0) parts.push(`${ordersDiff} commandes`);
+            if (stocksDiff > 0) parts.push(`${stocksDiff} stocks`);
+
+            if (parts.length > 0 && message) {
+                message.textContent = `${parts.join(' et ')} ont été synchronisées avec succès.`;
+            } else if (message) {
+                message.textContent = 'Aucune nouvelle donnée à synchroniser. Toutes vos données sont à jour.';
+            }
+
+            // Clear sessionStorage
+            if (currentBoutiqueId) {
+                sessionStorage.removeItem('sync_in_progress_' + currentBoutiqueId);
+            }
+
+            // Hide banner after 10 seconds
+            setTimeout(() => {
+                if (banner) banner.style.display = 'none';
+                document.body.style.paddingTop = '0';
+            }, 10000);
+        }
+
+        // Check for active syncs when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', checkForActiveSyncs);
+        } else {
+            checkForActiveSyncs();
+        }
+
+        // Expose function globally so settings page can trigger it
+        window.startGlobalSync = function(boutiqueId) {
+            sessionStorage.setItem('sync_in_progress_' + boutiqueId, 'true');
+            startGlobalSyncMonitoring(boutiqueId);
+        };
+    })();
+    </script>
+
+    <style>
+    @keyframes slideDown {
+        from { transform: translateY(-100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    </style>
 </body>
 </html>

@@ -1,0 +1,41 @@
+framework:
+    messenger:
+        failure_transport: failed
+
+        transports:
+            async:
+                dsn: 'doctrine://default?queue_name=async'
+                options:
+                    # Automatic retries on failure
+                    use_notify: true
+                    check_delayed_interval: 1000
+                retry_strategy:
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 2
+                    max_delay: 0
+
+            scheduler:
+                dsn: 'doctrine://default?queue_name=scheduler'
+
+            failed: 'doctrine://default?queue_name=failed'
+
+            sync: 'sync://'
+
+        routing:
+            # Route sync messages to async transport
+            App\Message\SyncOrdersMessage: async
+            App\Message\SyncStocksMessage: async
+            App\Message\CollectBoutiqueDataMessage: async
+            App\Message\CollectOrdersChunkMessage: async
+
+            # Route scheduled messages to scheduler transport
+            Symfony\Component\Scheduler\RecurringMessage: scheduler
+
+# when@test:
+#    framework:
+#        messenger:
+#            transports:
+#                # replace with your transport name here (e.g., my_transport: 'in-memory://')
+#                # For more Messenger testing tools, see https://github.com/zenstruck/messenger-test
+#                async: 'in-memory://'

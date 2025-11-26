@@ -320,14 +320,35 @@
     margin: 0;
 }
 
-/* Responsive */
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .welcome-section h1 {
+        font-size: 2.25rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .alert-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .alert-table table {
+        min-width: 600px;
+    }
+}
+
 @media (max-width: 768px) {
     .welcome-section {
-        padding: 2rem 1.5rem;
+        padding: 1.75rem 1.5rem;
+        margin-bottom: 2rem;
     }
 
     .welcome-section h1 {
-        font-size: 2rem;
+        font-size: 1.875rem;
+        letter-spacing: -0.02em;
     }
 
     .welcome-section p {
@@ -335,7 +356,7 @@
     }
 
     .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
     }
 
@@ -347,11 +368,153 @@
         font-size: 2.5rem;
     }
 
+    .stat-label {
+        font-size: 0.9375rem;
+    }
+
+    .boutique-card {
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .boutique-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .boutique-name {
+        font-size: 1.375rem;
+    }
+
     .boutique-actions {
         flex-direction: column;
+        width: 100%;
     }
 
     .boutique-actions .btn {
         width: 100%;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.375rem;
+    }
+
+    .alert-section {
+        margin-bottom: 1.75rem;
+    }
+
+    .alert-section h2 {
+        font-size: 1.375rem;
+    }
+
+    .alert-table thead th {
+        padding: 0.875rem 1rem;
+        font-size: 0.8125rem;
+    }
+
+    .alert-table tbody td {
+        padding: 0.875rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .quantity-badge {
+        padding: 0.3125rem 0.875rem;
+        font-size: 0.8125rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .welcome-section {
+        padding: 1.5rem 1.25rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .welcome-section h1 {
+        font-size: 1.5rem;
+    }
+
+    .welcome-section p {
+        font-size: 0.9375rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.875rem;
+    }
+
+    .stat-card {
+        padding: 1.375rem;
+    }
+
+    .stat-number {
+        font-size: 2.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+    }
+
+    .boutique-card {
+        padding: 1.25rem;
+    }
+
+    .boutique-name {
+        font-size: 1.25rem;
+    }
+
+    .boutique-domain {
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .alert-section h2 {
+        font-size: 1.25rem;
+    }
+
+    .alert-section p {
+        font-size: 0.875rem;
+    }
+
+    .alert-table thead th {
+        padding: 0.75rem 0.875rem;
+        font-size: 0.75rem;
+    }
+
+    .alert-table tbody td {
+        padding: 0.75rem 0.875rem;
+        font-size: 0.8125rem;
+    }
+
+    .alert-table table {
+        min-width: 500px;
+    }
+
+    .quantity-badge {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    .empty-boutiques {
+        padding: 3rem 1.5rem;
+    }
+
+    .empty-boutiques h2 {
+        font-size: 1.375rem;
+    }
+
+    .empty-boutiques p {
+        font-size: 1rem;
     }
 }
