@@ -229,7 +229,7 @@ class OrderController extends AbstractController
             // Use custom dates if provided
             $startDate = new \DateTime($startDateStr);
             $endDate = new \DateTime($endDateStr);
-            $period = 'custom';
+            // Keep the period value for button state, don't set to 'custom'
         } else {
             // Use period
             $endDate = new \DateTime();

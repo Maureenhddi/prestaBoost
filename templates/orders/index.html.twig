@@ -96,6 +96,29 @@
             background: var(--gray-300);
         }
 
+        .quick-period-btn {
+            padding: 6px 12px;
+            border: 2px solid var(--gray-300);
+            border-radius: 8px;
+            background: white;
+            color: var(--gray-700);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-period-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .quick-period-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
         .orders-table-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
@@ -547,57 +570,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('resize', updateScrollIndicators);
     }
 
-    // Handle period buttons
-    const periodBtns = document.querySelectorAll('.period-btn');
-    const startDateInput = document.getElementById('start_date');
-    const endDateInput = document.getElementById('end_date');
-    const ordersForm = document.getElementById('ordersFiltersForm');
-
-    periodBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const period = this.getAttribute('data-period');
-
-            // Remove active class from all buttons
-            periodBtns.forEach(b => {
-                b.classList.remove('primary');
-                b.classList.add('secondary');
-            });
-
-            // Add active class to clicked button
-            this.classList.remove('secondary');
-            this.classList.add('primary');
-
-            if (period === '') {
-                // Clear date inputs for "Tout"
-                if (startDateInput) startDateInput.value = '';
-                if (endDateInput) endDateInput.value = '';
-            } else {
-                // Calculate and set date range
-                const endDate = new Date();
-                const startDate = new Date();
-                startDate.setDate(endDate.getDate() - parseInt(period));
-
-                // Format dates as YYYY-MM-DD
-                const formatDate = (date) => {
-                    const year = date.getFullYear();
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const day = String(date.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-
-                // Update date inputs
-                if (startDateInput && endDateInput) {
-                    startDateInput.value = formatDate(startDate);
-                    endDateInput.value = formatDate(endDate);
-                }
-            }
-
-            // Submit the form to apply filters
-            if (ordersForm) {
-                ordersForm.submit();
-            }
-        });
-    });
+    // Period filter logic is now in _filters_period.html.twig component
 });
 </script>
 {% endblock %}
@@ -626,34 +599,24 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<div class="filters-card" style="margin-bottom: 20px;">
-    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Période</h3>
-    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-        <button type="button" data-period="7"
-           class="btn-filter period-btn {{ period == '7' ? 'primary' : 'secondary' }}">
-            7 jours
-        </button>
-        <button type="button" data-period="30"
-           class="btn-filter period-btn {{ period == '30' ? 'primary' : 'secondary' }}">
-            30 jours
-        </button>
-        <button type="button" data-period="90"
-           class="btn-filter period-btn {{ period == '90' ? 'primary' : 'secondary' }}">
-            90 jours
-        </button>
-        <button type="button" data-period=""
-           class="btn-filter period-btn {{ period == '' ? 'primary' : 'secondary' }}">
-            Tout
-        </button>
-    </div>
-</div>
+<form method="get" id="ordersFiltersForm">
+    <input type="hidden" id="periodHiddenInput" name="period" value="{{ period }}">
 
-<div class="filters-card">
-    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 0;">Filtres</h3>
-    <form method="get" id="ordersFiltersForm">
-        {% if period %}
-            <input type="hidden" name="period" value="{{ period }}">
-        {% endif %}
+    {% include '_filters_period.html.twig' with {
+        'activePeriod': period,
+        'showAllButton': true,
+        'showDateInputs': true,
+        'startDate': startDate,
+        'endDate': endDate,
+        'dateStartName': 'start_date',
+        'dateEndName': 'end_date',
+        'formId': 'ordersFiltersForm',
+        'cookieName': 'orders_period',
+        'inlineStyle': false
+    } %}
+
+    <div class="filters-card">
+        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 0;">Filtres</h3>
         <div class="filters-grid">
             <div class="filter-group">
                 <label for="search">Recherche</label>
@@ -671,21 +634,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <option value="6" {{ status == '6' ? 'selected' : '' }}>Annulé</option>
                 </select>
             </div>
-            <div class="filter-group">
-                <label for="start_date">Date début</label>
-                <input type="date" id="start_date" name="start_date" value="{{ startDate }}">
-            </div>
-            <div class="filter-group">
-                <label for="end_date">Date fin</label>
-                <input type="date" id="end_date" name="end_date" value="{{ endDate }}">
-            </div>
         </div>
         <div class="filter-actions">
             <button type="submit" class="btn-filter primary">Appliquer</button>
             <a href="{{ path('app_boutique_orders', {id: boutique.id, reset: 1}) }}" class="btn-filter secondary">Réinitialiser</a>
         </div>
-    </form>
-</div>
+    </div>
+</form>
 
 <div class="orders-table-card">
     {% if orders is empty %}

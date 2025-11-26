@@ -893,30 +893,26 @@
     </div>
 
     <div id="stock-history" class="tab-content">
-        <div class="period-selector-container" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 20px; padding: 24px 30px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
-            <div class="period-selector-title" style="font-size: 16px; font-weight: 700; color: var(--gray-700); margin-bottom: 16px;">Période d'affichage</div>
-            <div class="period-selector" style="display: flex; gap: 12px; flex-wrap: wrap;">
-                <button type="button" class="period-btn-filter" data-period="7" style="padding: 10px 20px; background: var(--gray-200); color: var(--gray-700); border-radius: 10px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: all 0.2s;">7 jours</button>
-                <button type="button" class="period-btn-filter active" data-period="30" style="padding: 10px 20px; background: var(--primary); color: white; border-radius: 10px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: all 0.2s;">30 jours</button>
-                <button type="button" class="period-btn-filter" data-period="90" style="padding: 10px 20px; background: var(--gray-200); color: var(--gray-700); border-radius: 10px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: all 0.2s;">90 jours</button>
-                <button type="button" id="customPeriodBtn" class="period-btn-filter" style="padding: 10px 20px; background: var(--gray-200); color: var(--gray-700); border-radius: 10px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: all 0.2s;">Période personnalisée</button>
-                <label style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--gray-50); border-radius: 10px; cursor: pointer;">
-                    <input type="checkbox" id="showOrdersCheck" style="width: 18px; height: 18px; cursor: pointer;">
-                    <span style="font-size: 14px; font-weight: 600; color: var(--gray-700);">Afficher les commandes</span>
+        <div class="filters-period-card" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(20px); border-radius: 20px; padding: 24px 30px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+            <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Période</h3>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+                <button type="button" class="quick-period-btn period-btn-filter" data-period="7" style="padding: 6px 12px; border: 2px solid var(--gray-300); border-radius: 8px; background: white; color: var(--gray-700); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">7j</button>
+                <button type="button" class="quick-period-btn period-btn-filter active" data-period="30" style="padding: 6px 12px; border: 2px solid var(--primary); border-radius: 8px; background: var(--primary); color: white; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">30j</button>
+                <button type="button" class="quick-period-btn period-btn-filter" data-period="90" style="padding: 6px 12px; border: 2px solid var(--gray-300); border-radius: 8px; background: white; color: var(--gray-700); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">90j</button>
+                <label style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--gray-50); border-radius: 8px; cursor: pointer; margin-left: auto;">
+                    <input type="checkbox" id="showOrdersCheck" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
+                    <span style="font-size: 12px; font-weight: 600; color: var(--gray-700);">Afficher commandes</span>
                 </label>
             </div>
 
-            <div id="customDateContainer" class="custom-date-container" style="display: none; background: var(--gray-50); padding: 20px; border-radius: 12px; margin-top: 16px;">
-                <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
-                    <div class="date-input-group" style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-weight: 600; color: var(--gray-700); font-size: 13px;">Date de début</label>
-                        <input type="date" id="customStartDate" style="padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px; background: white;">
-                    </div>
-                    <div class="date-input-group" style="display: flex; flex-direction: column; gap: 8px;">
-                        <label style="font-weight: 600; color: var(--gray-700); font-size: 13px;">Date de fin</label>
-                        <input type="date" id="customEndDate" style="padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px; background: white;">
-                    </div>
-                    <button type="button" id="applyCustomDates" class="apply-date-btn" style="padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer;">Appliquer</button>
+            <div class="period-dates-row" style="display: flex; gap: 16px; padding-top: 16px; border-top: 1px solid var(--gray-200);">
+                <div class="period-date-group" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                    <label for="customStartDate" style="font-size: 13px; font-weight: 600; color: var(--gray-700);">📅 Date de début</label>
+                    <input type="date" id="customStartDate" style="padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px; background: white; transition: all 0.2s ease;">
+                </div>
+                <div class="period-date-group" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                    <label for="customEndDate" style="font-size: 13px; font-weight: 600; color: var(--gray-700);">📅 Date de fin</label>
+                    <input type="date" id="customEndDate" style="padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px; background: white; transition: all 0.2s ease;">
                 </div>
             </div>
         </div>
@@ -1220,17 +1216,19 @@ document.querySelectorAll('.period-btn-filter[data-period]').forEach(btn => {
         // Update active state
         document.querySelectorAll('.period-btn-filter').forEach(b => {
             b.classList.remove('active');
-            b.style.background = 'var(--gray-200)';
+            b.style.background = 'white';
             b.style.color = 'var(--gray-700)';
+            b.style.borderColor = 'var(--gray-300)';
         });
         this.classList.add('active');
         this.style.background = 'var(--primary)';
         this.style.color = 'white';
+        this.style.borderColor = 'var(--primary)';
 
         // Calculate and set date range in custom date inputs
         const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(endDate.getDate() - parseInt(period));
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - parseInt(period));
 
         // Format dates as YYYY-MM-DD
         const formatDate = (date) => {
@@ -1248,43 +1246,48 @@ document.querySelectorAll('.period-btn-filter[data-period]').forEach(btn => {
             customEndDateInput.value = formatDate(endDate);
         }
 
-        // Hide custom date container
-        document.getElementById('customDateContainer').style.display = 'none';
-
         // Load data
         loadHistoryData(period, null, null, showOrders);
     });
 });
 
-// Custom period toggle
-document.getElementById('customPeriodBtn')?.addEventListener('click', function() {
-    const container = document.getElementById('customDateContainer');
-    container.style.display = container.style.display === 'none' ? 'block' : 'none';
-});
-
-// Apply custom dates
-document.getElementById('applyCustomDates')?.addEventListener('click', function() {
-    const startDate = document.getElementById('customStartDate').value;
+// Date inputs change handler
+document.getElementById('customStartDate')?.addEventListener('change', function() {
+    const startDate = this.value;
     const endDate = document.getElementById('customEndDate').value;
     const showOrders = document.getElementById('showOrdersCheck').checked;
 
-    if (!startDate || !endDate) {
-        alert('Veuillez sélectionner les deux dates');
-        return;
+    if (startDate && endDate) {
+        // Remove active state from period buttons
+        document.querySelectorAll('.period-btn-filter').forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'white';
+            b.style.color = 'var(--gray-700)';
+            b.style.borderColor = 'var(--gray-300)';
+        });
+
+        // Load data with custom dates
+        loadHistoryData('custom', startDate, endDate, showOrders);
     }
+});
 
-    // Update active state
-    document.querySelectorAll('.period-btn-filter').forEach(b => {
-        b.classList.remove('active');
-        b.style.background = 'var(--gray-200)';
-        b.style.color = 'var(--gray-700)';
-    });
-    document.getElementById('customPeriodBtn').classList.add('active');
-    document.getElementById('customPeriodBtn').style.background = 'var(--primary)';
-    document.getElementById('customPeriodBtn').style.color = 'white';
+document.getElementById('customEndDate')?.addEventListener('change', function() {
+    const startDate = document.getElementById('customStartDate').value;
+    const endDate = this.value;
+    const showOrders = document.getElementById('showOrdersCheck').checked;
 
-    // Load data
-    loadHistoryData('custom', startDate, endDate, showOrders);
+    if (startDate && endDate) {
+        // Remove active state from period buttons
+        document.querySelectorAll('.period-btn-filter').forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'white';
+            b.style.color = 'var(--gray-700)';
+            b.style.borderColor = 'var(--gray-300)';
+        });
+
+        // Load data with custom dates
+        loadHistoryData('custom', startDate, endDate, showOrders);
+    }
 });
 
 // Show orders checkbox

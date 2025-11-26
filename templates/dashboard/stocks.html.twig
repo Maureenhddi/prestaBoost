@@ -980,8 +980,26 @@
         </span>
         {% endif %}
     </div>
-    <form method="get" id="filtersForm">
+    <form method="get" id="stocksFiltersForm">
         <input type="hidden" name="submitted" value="1">
+        <input type="hidden" id="periodHiddenInput" name="period" value="{{ period|default('') }}">
+        <input type="hidden" name="_showSalesSubmitted" value="1">
+        <input type="hidden" name="_showRevenueSubmitted" value="1">
+
+        {# Include reusable period filter component #}
+        {% include '_filters_period.html.twig' with {
+            'activePeriod': period|default(''),
+            'showAllButton': false,
+            'showDateInputs': true,
+            'startDate': startDate,
+            'endDate': endDate,
+            'dateStartName': 'startDate',
+            'dateEndName': 'endDate',
+            'formId': 'stocksFiltersForm',
+            'cookieName': 'stocks_period',
+            'inlineStyle': false
+        } %}
+
         <div class="filters-grid">
             <!-- Première rangée: Recherche et Catégorie -->
             <div class="filters-row">
@@ -1032,12 +1050,7 @@
             <div class="filters-row">
                 <div class="filter-group">
                     <label>Nombre de jours d'historique</label>
-                    <div class="days-input-group">
-                        <button type="button" class="quick-days-btn {{ days == 7 ? 'active' : '' }}" data-days="7">7j</button>
-                        <button type="button" class="quick-days-btn {{ days == 14 ? 'active' : '' }}" data-days="14">14j</button>
-                        <button type="button" class="quick-days-btn {{ days == 30 ? 'active' : '' }}" data-days="30">30j</button>
-                        <input type="number" id="daysInput" name="days" min="1" max="90" value="{{ days }}" class="filter-group input" placeholder="Jours">
-                    </div>
+                    <input type="number" id="daysInput" name="days" min="1" max="90" value="{{ days }}" class="filter-group input" placeholder="Jours" style="width: 100%; padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px;">
                 </div>
                 <div class="filter-group">
                     <label for="excludeOutOfStockDays" style="display: flex; align-items: center; gap: 6px;">
@@ -1050,16 +1063,6 @@
         </div>
 
         <div class="date-filters-row">
-            <div class="date-row">
-                <div class="filter-group">
-                    <label for="startDate">📅 Date de début</label>
-                    <input type="date" id="startDate" name="startDate" value="{{ startDate }}" placeholder="Sélectionner une date">
-                </div>
-                <div class="filter-group">
-                    <label for="endDate">📅 Date de fin</label>
-                    <input type="date" id="endDate" name="endDate" value="{{ endDate }}" placeholder="Sélectionner une date">
-                </div>
-            </div>
             <div class="checkboxes-row">
                 <div class="filter-group">
                     <label class="checkbox-label">
@@ -1236,49 +1239,32 @@
 {% block javascripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const filtersForm = document.getElementById('filtersForm');
+    const filtersForm = document.getElementById('stocksFiltersForm');
     const daysInput = document.getElementById('daysInput');
-    const quickDaysBtns = document.querySelectorAll('.quick-days-btn');
+    const showSalesCheckbox = document.getElementById('showSales');
+    const showRevenueCheckbox = document.getElementById('showRevenue');
 
-    // Handle quick days buttons (only update value, don't submit)
-    quickDaysBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Remove active class from all buttons
-            quickDaysBtns.forEach(b => b.classList.remove('active'));
-            // Add active class to clicked button
-            this.classList.add('active');
-            // Set input value
-            const days = this.getAttribute('data-days');
-            daysInput.value = days;
+    // Cookie helper functions
+    function setCookie(name, value, days = 365) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        const expires = "expires=" + date.toUTCString();
+        document.cookie = name + "=" + value + ";" + expires + ";path=/;SameSite=Lax";
+    }
 
-            // Calculate and set date range
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(endDate.getDate() - parseInt(days));
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
 
-            // Format dates as YYYY-MM-DD
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-
-            // Update date inputs to show the calculated range
-            const startDateInput = document.getElementById('startDate');
-            const endDateInput = document.getElementById('endDate');
-            if (startDateInput && endDateInput) {
-                startDateInput.value = formatDate(startDate);
-                endDateInput.value = formatDate(endDate);
-            }
-
-            // Submit the form to apply filters
-            const filtersForm = document.getElementById('filtersForm');
-            if (filtersForm) {
-                filtersForm.submit();
-            }
-        });
-    });
+    // Checkboxes are already handled by the server via query parameters
+    // No need for cookie management as showSales and showRevenue are in the URL
 
     // Handle days input validation
     if (daysInput) {
@@ -1321,26 +1307,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateScrollIndicators();
         window.addEventListener('resize', updateScrollIndicators);
     }
-
-    // Date validation
-    const startDateInput = document.getElementById('startDate');
-    const endDateInput = document.getElementById('endDate');
-
-    if (filtersForm && startDateInput && endDateInput) {
-        filtersForm.addEventListener('submit', function(e) {
-            const startDate = startDateInput.value;
-            const endDate = endDateInput.value;
-
-            // Only validate if both dates are provided
-            if (startDate && endDate && startDate > endDate) {
-                e.preventDefault();
-                alert('La date de début doit être antérieure à la date de fin');
-                return false;
-            }
-        });
-    }
-
-    // No JavaScript needed for checkboxes - they work natively!
 });
 </script>
 {% endblock %}

@@ -57,6 +57,29 @@
             background: var(--gray-300);
         }
 
+        .quick-period-btn {
+            padding: 6px 12px;
+            border: 2px solid var(--gray-300);
+            border-radius: 8px;
+            background: white;
+            color: var(--gray-700);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-period-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .quick-period-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
         .products-table-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
@@ -388,42 +411,22 @@ function toggleSidebar() {
     </div>
 </div>
 
-<div class="filters-card" style="margin-bottom: 20px;">
-    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Période</h3>
-    <form method="get" id="periodForm">
-        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
-            <button type="button" class="btn-filter {{ period == '7' and not startDateStr ? 'primary' : 'secondary' }}" onclick="selectPeriod('7')">
-                7 jours
-            </button>
-            <button type="button" class="btn-filter {{ period == '30' and not startDateStr ? 'primary' : 'secondary' }}" onclick="selectPeriod('30')">
-                30 jours
-            </button>
-            <button type="button" class="btn-filter {{ period == '90' and not startDateStr ? 'primary' : 'secondary' }}" onclick="selectPeriod('90')">
-                90 jours
-            </button>
-            <button type="button" class="btn-filter {{ period == 'custom' or startDateStr ? 'primary' : 'secondary' }}" onclick="toggleCustomDates()">
-                📅 Période personnalisée
-            </button>
-        </div>
+<form method="get" id="analyticsForm">
+    <input type="hidden" id="periodHiddenInput" name="period" value="{{ period }}">
 
-        <div id="customDatesContainer" style="display: {{ startDateStr ? 'flex' : 'none' }}; gap: 12px; flex-wrap: wrap; padding: 16px; background: var(--gray-50); border-radius: 12px;">
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                <label style="font-size: 13px; font-weight: 600; color: var(--gray-700);">Date de début</label>
-                <input type="date" name="startDate" id="startDate" value="{{ startDateStr }}" style="padding: 8px 12px; border: 2px solid var(--gray-300); border-radius: 8px;">
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                <label style="font-size: 13px; font-weight: 600; color: var(--gray-700);">Date de fin</label>
-                <input type="date" name="endDate" id="endDate" value="{{ endDateStr }}" style="padding: 8px 12px; border: 2px solid var(--gray-300); border-radius: 8px;">
-            </div>
-            <div style="display: flex; align-items: flex-end; gap: 8px;">
-                <button type="submit" class="btn-filter primary">Appliquer</button>
-                <a href="{{ path('app_boutique_analytics', {id: boutique.id, reset: 1}) }}" class="btn-filter secondary">Réinitialiser</a>
-            </div>
-        </div>
-
-        <input type="hidden" name="period" id="periodInput" value="{{ period }}">
-    </form>
-</div>
+    {% include '_filters_period.html.twig' with {
+        'activePeriod': period,
+        'showAllButton': false,
+        'showDateInputs': true,
+        'startDate': startDateStr,
+        'endDate': endDateStr,
+        'dateStartName': 'startDate',
+        'dateEndName': 'endDate',
+        'formId': 'analyticsForm',
+        'cookieName': 'analytics_period',
+        'inlineStyle': false
+    } %}
+</form>
 
 <div class="products-table-card">
     <div style="padding: 24px 30px; border-bottom: 1px solid var(--gray-200);">
@@ -555,47 +558,8 @@ document.addEventListener('DOMContentLoaded', function() {
         updateScrollIndicators();
         window.addEventListener('resize', updateScrollIndicators);
     }
+
+    // Period filter logic is now in _filters_period.html.twig component
 });
-
-function selectPeriod(days) {
-    const startDateInput = document.getElementById('startDate');
-    const endDateInput = document.getElementById('endDate');
-
-    // Calculate and set date range
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - parseInt(days));
-
-    // Format dates as YYYY-MM-DD
-    const formatDate = (date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    // Update date inputs
-    if (startDateInput && endDateInput) {
-        startDateInput.value = formatDate(startDate);
-        endDateInput.value = formatDate(endDate);
-    }
-
-    document.getElementById('periodInput').value = days;
-    // Show custom dates container so the dates are visible
-    document.getElementById('customDatesContainer').style.display = 'flex';
-    // Submit form
-    document.getElementById('periodForm').submit();
-}
-
-function toggleCustomDates() {
-    const container = document.getElementById('customDatesContainer');
-    const isVisible = container.style.display !== 'none';
-    container.style.display = isVisible ? 'none' : 'flex';
-
-    if (!isVisible) {
-        // Clear period input when showing custom dates
-        document.getElementById('periodInput').value = 'custom';
-    }
-}
 </script>
 {% endblock %}

@@ -181,8 +181,21 @@ class DashboardController extends AbstractController
         $category = $category ?? '';
         $startDate = $request->query->get('startDate', $reset ? '' : $request->cookies->get('stocks_start_date', ''));
         $endDate = $request->query->get('endDate', $reset ? '' : $request->cookies->get('stocks_end_date', ''));
-        $showSales = $request->query->getBoolean('showSales', false);
-        $showRevenue = $request->query->getBoolean('showRevenue', false);
+
+        // Get showSales and showRevenue from query or cookies
+        // If the form was submitted (hidden field present), use query value (even if false)
+        // Otherwise, use cookie value
+        if ($request->query->has('_showSalesSubmitted')) {
+            $showSales = $request->query->getBoolean('showSales', false);
+        } else {
+            $showSales = $reset ? false : $request->cookies->getBoolean('stocks_showSales', false);
+        }
+
+        if ($request->query->has('_showRevenueSubmitted')) {
+            $showRevenue = $request->query->getBoolean('showRevenue', false);
+        } else {
+            $showRevenue = $reset ? false : $request->cookies->getBoolean('stocks_showRevenue', false);
+        }
 
         // Get exclude out of stock days parameter
         $excludeOutOfStockDays = $request->query->get('excludeOutOfStockDays', $reset ? '' : $request->cookies->get('exclude_out_of_stock_days', ''));
@@ -355,6 +368,13 @@ class DashboardController extends AbstractController
                     new \Symfony\Component\HttpFoundation\Cookie('exclude_out_of_stock_days', (string)($excludeOutOfStockDays ?? ''), $cookieExpiry, $cookiePath, null, false, false, false, 'lax')
                 );
             }
+            // Always save showSales and showRevenue to cookies
+            $response->headers->setCookie(
+                new \Symfony\Component\HttpFoundation\Cookie('stocks_showSales', $showSales ? '1' : '0', $cookieExpiry, $cookiePath, null, false, false, false, 'lax')
+            );
+            $response->headers->setCookie(
+                new \Symfony\Component\HttpFoundation\Cookie('stocks_showRevenue', $showRevenue ? '1' : '0', $cookieExpiry, $cookiePath, null, false, false, false, 'lax')
+            );
         }
 
         // Cache for 30 seconds

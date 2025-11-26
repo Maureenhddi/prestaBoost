@@ -1,0 +1,287 @@
+{#
+    Paramètres :
+    - activePeriod: '7', '30', '90', '' pour le bouton actif
+    - showAllButton: true/false pour afficher le bouton "Tout"
+    - showDateInputs: true/false pour afficher les inputs de dates
+    - startDate: valeur du champ date début
+    - endDate: valeur du champ date fin
+    - formId: ID du formulaire à soumettre
+    - cookieName: nom du cookie pour la persistance
+    - inlineStyle: true/false pour inclure les styles CSS (mettre false si déjà dans la page)
+#}
+
+{% if inlineStyle|default(true) %}
+<style>
+    .filters-period-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 24px 30px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .quick-period-btn {
+        padding: 6px 12px;
+        border: 2px solid var(--gray-300);
+        border-radius: 8px;
+        background: white;
+        color: var(--gray-700);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .quick-period-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .quick-period-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    .period-dates-row {
+        display: flex;
+        gap: 16px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .period-date-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .period-date-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gray-700);
+    }
+
+    .period-date-group input[type="date"] {
+        padding: 10px 14px;
+        border: 2px solid var(--gray-300);
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+
+    .period-date-group input[type="date"]:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    @media (max-width: 768px) {
+        .period-dates-row {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endif %}
+
+<div class="filters-period-card">
+    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Période</h3>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="quick-period-btn {{ activePeriod == '7' ? 'active' : '' }}" data-period="7" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">
+            7j
+        </button>
+        <button type="button" class="quick-period-btn {{ activePeriod == '30' ? 'active' : '' }}" data-period="30" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">
+            30j
+        </button>
+        <button type="button" class="quick-period-btn {{ activePeriod == '90' ? 'active' : '' }}" data-period="90" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">
+            90j
+        </button>
+        {% if showAllButton|default(false) %}
+        <button type="button" class="quick-period-btn {{ activePeriod == '' ? 'active' : '' }}" data-period="" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">
+            Tout
+        </button>
+        {% endif %}
+    </div>
+
+    {% if showDateInputs|default(true) %}
+    <div class="period-dates-row">
+        <div class="period-date-group">
+            <label for="period_start_date">📅 Date de début</label>
+            <input type="date" id="period_start_date" name="{{ dateStartName|default('start_date') }}" value="{{ startDate|default('') }}">
+        </div>
+        <div class="period-date-group">
+            <label for="period_end_date">📅 Date de fin</label>
+            <input type="date" id="period_end_date" name="{{ dateEndName|default('end_date') }}" value="{{ endDate|default('') }}">
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+(function() {
+    // Cookie helper functions
+    function setCookie(name, value, days = 365) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        const expires = "expires=" + date.toUTCString();
+        document.cookie = name + "=" + value + ";" + expires + ";path=/;SameSite=Lax";
+    }
+
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+
+    function initPeriodFilters() {
+        console.log('🚀 initPeriodFilters() called');
+
+        // Handle quick period buttons
+        const quickPeriodBtns = document.querySelectorAll('.quick-period-btn');
+        console.log('📊 Found', quickPeriodBtns.length, 'period buttons');
+
+        const startDateInput = document.getElementById('period_start_date');
+        const endDateInput = document.getElementById('period_end_date');
+
+        // Exit if no period buttons found (component not used on this page)
+        if (quickPeriodBtns.length === 0) {
+            console.log('⚠️ No period buttons found, exiting');
+            return;
+        }
+
+        // Get cookie name from first button
+        const firstBtn = quickPeriodBtns[0];
+        const cookieName = firstBtn.getAttribute('data-cookie');
+        let savedPeriod = getCookie(cookieName);
+
+        // Check if there's a period in URL (from hidden input)
+        const periodHiddenInput = document.getElementById('periodHiddenInput');
+        const urlPeriod = periodHiddenInput ? periodHiddenInput.value : null;
+
+        // If URL period exists and is different from cookie, update cookie
+        if (urlPeriod && urlPeriod !== savedPeriod) {
+            console.log('🔄 Updating cookie from URL. Cookie:', savedPeriod, '→ URL:', urlPeriod);
+            setCookie(cookieName, urlPeriod);
+            savedPeriod = urlPeriod;
+        }
+
+        // Force active state based on savedPeriod
+        quickPeriodBtns.forEach(btn => {
+            const btnPeriod = btn.getAttribute('data-period');
+
+            // Remove any existing active class first
+            btn.classList.remove('active');
+
+            // Check if this button matches the saved period
+            if (savedPeriod && btnPeriod === savedPeriod) {
+                btn.classList.add('active');
+                console.log('✅ Setting button active:', btnPeriod);
+            }
+        });
+
+        // Add click listeners
+        quickPeriodBtns.forEach(btn => {
+            const cookieName = btn.getAttribute('data-cookie');
+            const formId = btn.getAttribute('data-form');
+
+            btn.addEventListener('click', function(e) {
+                const period = this.getAttribute('data-period');
+
+                console.log('=== PERIOD BUTTON CLICKED ===');
+                console.log('Period:', period);
+                console.log('Form ID:', formId);
+                console.log('Start date input exists:', !!startDateInput);
+                console.log('End date input exists:', !!endDateInput);
+
+                // Update hidden period input if exists
+                const periodHiddenInput = document.getElementById('periodHiddenInput');
+                if (periodHiddenInput) {
+                    periodHiddenInput.value = period;
+                    console.log('Updated hidden period input to:', period);
+                }
+
+                // Save period to cookie
+                setCookie(cookieName, period);
+
+                // Remove active class from all buttons
+                quickPeriodBtns.forEach(b => b.classList.remove('active'));
+
+                // Add active class to clicked button
+                this.classList.add('active');
+
+                if (period === '') {
+                    // Clear date inputs for "Tout"
+                    if (startDateInput) startDateInput.value = '';
+                    if (endDateInput) endDateInput.value = '';
+                    console.log('Cleared dates for "Tout"');
+                } else {
+                    // Calculate and set date range
+                    const endDate = new Date();
+                    const startDate = new Date(endDate);
+                    startDate.setDate(startDate.getDate() - parseInt(period));
+
+                    console.log('Calculating dates for period:', period);
+                    console.log('End date object:', endDate);
+                    console.log('Start date object:', startDate);
+
+                    // Format dates as YYYY-MM-DD
+                    const formatDate = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    };
+
+                    // Update date inputs
+                    if (startDateInput && endDateInput) {
+                        const startStr = formatDate(startDate);
+                        const endStr = formatDate(endDate);
+                        console.log('Formatted start date:', startStr);
+                        console.log('Formatted end date:', endStr);
+
+                        startDateInput.value = startStr;
+                        endDateInput.value = endStr;
+
+                        console.log('Input values after setting:');
+                        console.log('  startDateInput.value:', startDateInput.value);
+                        console.log('  endDateInput.value:', endDateInput.value);
+                        console.log('  startDateInput.name:', startDateInput.name);
+                        console.log('  endDateInput.name:', endDateInput.name);
+                    } else {
+                        console.error('Date inputs not found!');
+                    }
+                }
+
+                // Submit the form to apply filters
+                const filterForm = document.getElementById(formId);
+                console.log('Looking for form with ID:', formId);
+                console.log('Form found:', !!filterForm);
+
+                if (filterForm) {
+                    console.log('Submitting form...');
+                    console.log('Form action:', filterForm.action);
+                    console.log('Form method:', filterForm.method);
+                    filterForm.submit();
+                } else {
+                    console.error('Form not found with ID:', formId);
+                }
+            });
+        });
+    }
+
+    // Run immediately if DOM already loaded, otherwise wait
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPeriodFilters);
+    } else {
+        initPeriodFilters();
+    }
+})();
+</script>
