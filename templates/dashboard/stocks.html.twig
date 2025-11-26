@@ -23,34 +23,32 @@
         .filters-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 32px 40px;
-            margin-bottom: 24px;
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
         .filters-grid {
             display: flex;
             flex-direction: column;
-            gap: 28px;
-            margin-top: 24px;
+            gap: 12px;
         }
 
         .filters-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
         }
 
         .date-filters-row {
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            padding: 24px;
+            gap: 12px;
+            padding: 16px;
             background: var(--gray-50);
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px dashed var(--gray-300);
-            margin-top: 8px;
         }
 
         .date-filters-row .filter-group label {
@@ -309,19 +307,19 @@
 
         .filter-group label {
             display: block;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--gray-700);
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .filter-group input,
         .filter-group select {
             width: 100%;
-            padding: 10px 14px;
+            padding: 6px 10px;
             border: 2px solid var(--gray-300);
-            border-radius: 10px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 13px;
             transition: all 0.2s ease;
         }
 
@@ -334,14 +332,14 @@
 
         .filter-actions {
             display: flex;
-            gap: 16px;
-            margin-top: 24px;
+            gap: 12px;
+            margin-top: 12px;
         }
 
         .btn-filter {
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
             font-weight: 600;
             border: none;
             cursor: pointer;
@@ -646,13 +644,13 @@
         .checkbox-label {
             display: flex;
             align-items: center;
-            padding: 14px 18px;
-            border-radius: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
             background: white;
             border: 2px solid var(--gray-200);
             transition: all 0.2s ease;
             cursor: pointer;
-            gap: 14px;
+            gap: 10px;
         }
 
         .checkbox-label:hover {
@@ -661,8 +659,8 @@
         }
 
         .checkbox-label input[type="checkbox"] {
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
             flex-shrink: 0;
             accent-color: #0891b2;
@@ -689,16 +687,16 @@
         }
 
         .checkbox-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--gray-700);
             transition: color 0.2s ease;
         }
 
         .checkbox-subtitle {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--gray-500);
-            line-height: 1.4;
+            line-height: 1.3;
             transition: color 0.2s ease;
         }
 
@@ -1046,40 +1044,24 @@
                 </div>
             </div>
 
-            <!-- Troisième rangée: Nombre de jours et Exclusion ruptures -->
-            <div class="filters-row">
-                <div class="filter-group">
-                    <label>Nombre de jours d'historique</label>
-                    <input type="number" id="daysInput" name="days" min="1" max="90" value="{{ days }}" class="filter-group input" placeholder="Jours" style="width: 100%; padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px;">
+            <!-- Troisième rangée: Tout sur une ligne -->
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="daysInput" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">📅 Jours historique</label>
+                    <input type="number" id="daysInput" name="days" min="1" max="90" value="{{ days }}" placeholder="7" style="width: 60px; padding: 6px 8px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px;">
                 </div>
-                <div class="filter-group">
-                    <label for="excludeOutOfStockDays" style="display: flex; align-items: center; gap: 6px;">
-                        🚫 Exclure ruptures depuis
-                        <span style="font-size: 12px; color: var(--gray-500); font-weight: 400;">(jours)</span>
-                    </label>
-                    <input type="number" id="excludeOutOfStockDays" name="excludeOutOfStockDays" min="0" max="365" value="{{ excludeOutOfStockDays ?? '' }}" placeholder="Ex: 30 jours" style="width: 100%; padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label for="excludeOutOfStockDays" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">🚫 Exclure ruptures</label>
+                    <input type="number" id="excludeOutOfStockDays" name="excludeOutOfStockDays" min="0" max="365" value="{{ excludeOutOfStockDays ?? '' }}" placeholder="30" style="width: 60px; padding: 6px 8px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px;">
                 </div>
-            </div>
-        </div>
-
-        <div class="date-filters-row">
-            <div class="checkboxes-row">
-                <div class="filter-group">
-                    <label class="checkbox-label">
+                <div style="display: flex; gap: 8px; margin-left: auto;">
+                    <label class="checkbox-label" style="padding: 8px 12px;">
                         <input type="checkbox" id="showSales" name="showSales" value="1" {{ showSales ? 'checked' : '' }}>
-                        <div class="checkbox-text">
-                            <div class="checkbox-title">📊 Afficher produits vendus</div>
-                            <div class="checkbox-subtitle">Quantité vendue par jour</div>
-                        </div>
+                        <span style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">📊 Produits vendus</span>
                     </label>
-                </div>
-                <div class="filter-group">
-                    <label class="checkbox-label">
+                    <label class="checkbox-label" style="padding: 8px 12px;">
                         <input type="checkbox" id="showRevenue" name="showRevenue" value="1" {{ showRevenue ? 'checked' : '' }}>
-                        <div class="checkbox-text">
-                            <div class="checkbox-title">💰 Afficher CA généré</div>
-                            <div class="checkbox-subtitle">Chiffre d'affaires TTC par jour</div>
-                        </div>
+                        <span style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">💰 CA généré</span>
                     </label>
                 </div>
             </div>

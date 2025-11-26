@@ -15,9 +15,9 @@
     .filters-period-card {
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: 24px 30px;
-        margin-bottom: 24px;
+        border-radius: 16px;
+        padding: 16px 20px;
+        margin-bottom: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
 
@@ -46,31 +46,30 @@
 
     .period-dates-row {
         display: flex;
-        gap: 16px;
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid var(--gray-200);
+        gap: 12px;
+        align-items: center;
     }
 
     .period-date-group {
-        flex: 1;
         display: flex;
-        flex-direction: column;
+        align-items: center;
         gap: 8px;
     }
 
     .period-date-group label {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
         color: var(--gray-700);
+        white-space: nowrap;
     }
 
     .period-date-group input[type="date"] {
-        padding: 10px 14px;
+        padding: 6px 10px;
         border: 2px solid var(--gray-300);
-        border-radius: 10px;
-        font-size: 14px;
+        border-radius: 8px;
+        font-size: 13px;
         transition: all 0.2s ease;
+        width: 140px;
     }
 
     .period-date-group input[type="date"]:focus {
@@ -88,36 +87,29 @@
 {% endif %}
 
 <div class="filters-period-card">
-    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Période</h3>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button type="button" class="quick-period-btn {{ activePeriod == '7' ? 'active' : '' }}" data-period="7" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">
-            7j
-        </button>
-        <button type="button" class="quick-period-btn {{ activePeriod == '30' ? 'active' : '' }}" data-period="30" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">
-            30j
-        </button>
-        <button type="button" class="quick-period-btn {{ activePeriod == '90' ? 'active' : '' }}" data-period="90" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">
-            90j
-        </button>
-        {% if showAllButton|default(false) %}
-        <button type="button" class="quick-period-btn {{ activePeriod == '' ? 'active' : '' }}" data-period="" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">
-            Tout
-        </button>
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 6px;">
+            <button type="button" class="quick-period-btn {{ activePeriod == '7' ? 'active' : '' }}" data-period="7" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">7j</button>
+            <button type="button" class="quick-period-btn {{ activePeriod == '30' ? 'active' : '' }}" data-period="30" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">30j</button>
+            <button type="button" class="quick-period-btn {{ activePeriod == '90' ? 'active' : '' }}" data-period="90" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">90j</button>
+            {% if showAllButton|default(false) %}
+            <button type="button" class="quick-period-btn {{ activePeriod == '' ? 'active' : '' }}" data-period="" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">Tout</button>
+            {% endif %}
+        </div>
+
+        {% if showDateInputs|default(true) %}
+        <div style="display: flex; gap: 6px; align-items: center; margin-left: 8px; padding-left: 12px; border-left: 1px solid var(--gray-300);">
+            <div class="period-date-group">
+                <label for="period_start_date">Du</label>
+                <input type="date" id="period_start_date" name="{{ dateStartName|default('start_date') }}" value="{{ startDate|default('') }}">
+            </div>
+            <div class="period-date-group">
+                <label for="period_end_date">au</label>
+                <input type="date" id="period_end_date" name="{{ dateEndName|default('end_date') }}" value="{{ endDate|default('') }}">
+            </div>
+        </div>
         {% endif %}
     </div>
-
-    {% if showDateInputs|default(true) %}
-    <div class="period-dates-row">
-        <div class="period-date-group">
-            <label for="period_start_date">📅 Date de début</label>
-            <input type="date" id="period_start_date" name="{{ dateStartName|default('start_date') }}" value="{{ startDate|default('') }}">
-        </div>
-        <div class="period-date-group">
-            <label for="period_end_date">📅 Date de fin</label>
-            <input type="date" id="period_end_date" name="{{ dateEndName|default('end_date') }}" value="{{ endDate|default('') }}">
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <script>

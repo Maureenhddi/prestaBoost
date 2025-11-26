@@ -13,6 +13,15 @@
         :root {
             --primary: {{ boutique.primaryColor }};
         }
+        body {
+            background: linear-gradient(135deg, {{ boutique.primaryColor }} 0%, {{ boutique.primaryColor }}dd 100%);
+        }
+        body::before {
+            background:
+                radial-gradient(circle at 20% 50%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, {{ boutique.primaryColor }}26 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, {{ boutique.primaryColor }}26 0%, transparent 50%);
+        }
         {% endif %}
 
         .product-header {
@@ -905,14 +914,14 @@
                 </label>
             </div>
 
-            <div class="period-dates-row" style="display: flex; gap: 16px; padding-top: 16px; border-top: 1px solid var(--gray-200);">
-                <div class="period-date-group" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-                    <label for="customStartDate" style="font-size: 13px; font-weight: 600; color: var(--gray-700);">📅 Date de début</label>
-                    <input type="date" id="customStartDate" style="padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px; background: white; transition: all 0.2s ease;">
+            <div class="period-dates-row" style="display: flex; gap: 12px; align-items: center; padding-top: 12px; border-top: 1px solid var(--gray-200);">
+                <div class="period-date-group" style="display: flex; align-items: center; gap: 8px;">
+                    <label for="customStartDate" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">Du</label>
+                    <input type="date" id="customStartDate" style="padding: 6px 10px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px; background: white; transition: all 0.2s ease; width: 140px;">
                 </div>
-                <div class="period-date-group" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-                    <label for="customEndDate" style="font-size: 13px; font-weight: 600; color: var(--gray-700);">📅 Date de fin</label>
-                    <input type="date" id="customEndDate" style="padding: 10px 14px; border: 2px solid var(--gray-300); border-radius: 10px; font-size: 14px; background: white; transition: all 0.2s ease;">
+                <div class="period-date-group" style="display: flex; align-items: center; gap: 8px;">
+                    <label for="customEndDate" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">au</label>
+                    <input type="date" id="customEndDate" style="padding: 6px 10px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px; background: white; transition: all 0.2s ease; width: 140px;">
                 </div>
             </div>
         </div>
@@ -1187,7 +1196,11 @@ function updateChart(historyData, orderData) {
                     title: { display: true, text: 'Quantité en stock', font: { size: 13, weight: '600' } },
                     beginAtZero: true,
                     grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                    ticks: { font: { size: 12 } }
+                    ticks: {
+                        font: { size: 12 },
+                        stepSize: 1,
+                        precision: 0
+                    }
                 },
                 y1: {
                     type: 'linear',
@@ -1196,7 +1209,11 @@ function updateChart(historyData, orderData) {
                     title: { display: true, text: 'Commandes', font: { size: 13, weight: '600' } },
                     beginAtZero: true,
                     grid: { drawOnChartArea: false },
-                    ticks: { font: { size: 12 } }
+                    ticks: {
+                        font: { size: 12 },
+                        stepSize: 1,
+                        precision: 0
+                    }
                 },
                 x: {
                     grid: { display: false },
@@ -1292,18 +1309,18 @@ document.getElementById('customEndDate')?.addEventListener('change', function() 
 
 // Show orders checkbox
 document.getElementById('showOrdersCheck')?.addEventListener('change', function(e) {
-    const activeBtn = document.querySelector('.period-btn-filter.active[data-period]');
-    const period = activeBtn ? activeBtn.getAttribute('data-period') : '30';
     const showOrders = e.target.checked;
+    const startDate = document.getElementById('customStartDate').value;
+    const endDate = document.getElementById('customEndDate').value;
 
-    // Check if custom period is active
-    if (document.getElementById('customPeriodBtn').classList.contains('active')) {
-        const startDate = document.getElementById('customStartDate').value;
-        const endDate = document.getElementById('customEndDate').value;
-        if (startDate && endDate) {
-            loadHistoryData('custom', startDate, endDate, showOrders);
-        }
+    // Check if custom dates are set
+    if (startDate && endDate) {
+        // Use custom dates
+        loadHistoryData('custom', startDate, endDate, showOrders);
     } else {
+        // Use period from active button
+        const activeBtn = document.querySelector('.period-btn-filter.active[data-period]');
+        const period = activeBtn ? activeBtn.getAttribute('data-period') : '30';
         loadHistoryData(period, null, null, showOrders);
     }
 });
