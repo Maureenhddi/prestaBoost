@@ -558,12 +558,31 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function selectPeriod(days) {
-    // Clear custom dates
-    document.getElementById('startDate').value = '';
-    document.getElementById('endDate').value = '';
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    // Calculate and set date range
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - parseInt(days));
+
+    // Format dates as YYYY-MM-DD
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Update date inputs
+    if (startDateInput && endDateInput) {
+        startDateInput.value = formatDate(startDate);
+        endDateInput.value = formatDate(endDate);
+    }
+
     document.getElementById('periodInput').value = days;
-    // Hide custom dates container
-    document.getElementById('customDatesContainer').style.display = 'none';
+    // Show custom dates container so the dates are visible
+    document.getElementById('customDatesContainer').style.display = 'flex';
     // Submit form
     document.getElementById('periodForm').submit();
 }

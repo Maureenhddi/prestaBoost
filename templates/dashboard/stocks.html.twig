@@ -1212,21 +1212,21 @@
         {% if totalPages > 1 %}
         <div class="pagination">
             {% if currentPage > 1 %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, filter: filter, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">← Précédent</a>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage - 1, 'filters[]': filters, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">← Précédent</a>
             {% endif %}
 
             {% for page in 1..totalPages %}
                 {% if page == currentPage %}
                     <span class="current">{{ page }}</span>
                 {% elseif page == 1 or page == totalPages or (page >= currentPage - 2 and page <= currentPage + 2) %}
-                    <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: page, filter: filter, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">{{ page }}</a>
+                    <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: page, 'filters[]': filters, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">{{ page }}</a>
                 {% elseif page == currentPage - 3 or page == currentPage + 3 %}
                     <span>...</span>
                 {% endif %}
             {% endfor %}
 
             {% if currentPage < totalPages %}
-                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, filter: filter, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">Suivant →</a>
+                <a href="{{ path('app_boutique_stocks', {id: boutique.id, page: currentPage + 1, 'filters[]': filters, search: search, days: days, category: category, startDate: startDate, endDate: endDate, showSales: showSales ? 1 : 0, showRevenue: showRevenue ? 1 : 0}) }}">Suivant →</a>
             {% endif %}
         </div>
         {% endif %}
@@ -1250,6 +1250,33 @@ document.addEventListener('DOMContentLoaded', function() {
             // Set input value
             const days = this.getAttribute('data-days');
             daysInput.value = days;
+
+            // Calculate and set date range
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - parseInt(days));
+
+            // Format dates as YYYY-MM-DD
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            // Update date inputs to show the calculated range
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            if (startDateInput && endDateInput) {
+                startDateInput.value = formatDate(startDate);
+                endDateInput.value = formatDate(endDate);
+            }
+
+            // Submit the form to apply filters
+            const filtersForm = document.getElementById('filtersForm');
+            if (filtersForm) {
+                filtersForm.submit();
+            }
         });
     });
 

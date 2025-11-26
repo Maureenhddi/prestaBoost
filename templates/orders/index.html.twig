@@ -546,6 +546,58 @@ document.addEventListener('DOMContentLoaded', function() {
         updateScrollIndicators();
         window.addEventListener('resize', updateScrollIndicators);
     }
+
+    // Handle period buttons
+    const periodBtns = document.querySelectorAll('.period-btn');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const ordersForm = document.getElementById('ordersFiltersForm');
+
+    periodBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const period = this.getAttribute('data-period');
+
+            // Remove active class from all buttons
+            periodBtns.forEach(b => {
+                b.classList.remove('primary');
+                b.classList.add('secondary');
+            });
+
+            // Add active class to clicked button
+            this.classList.remove('secondary');
+            this.classList.add('primary');
+
+            if (period === '') {
+                // Clear date inputs for "Tout"
+                if (startDateInput) startDateInput.value = '';
+                if (endDateInput) endDateInput.value = '';
+            } else {
+                // Calculate and set date range
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(endDate.getDate() - parseInt(period));
+
+                // Format dates as YYYY-MM-DD
+                const formatDate = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
+                // Update date inputs
+                if (startDateInput && endDateInput) {
+                    startDateInput.value = formatDate(startDate);
+                    endDateInput.value = formatDate(endDate);
+                }
+            }
+
+            // Submit the form to apply filters
+            if (ordersForm) {
+                ordersForm.submit();
+            }
+        });
+    });
 });
 </script>
 {% endblock %}
@@ -577,28 +629,28 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="filters-card" style="margin-bottom: 20px;">
     <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Période</h3>
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-        <a href="{{ path('app_boutique_orders', {id: boutique.id, period: '7'}) }}"
-           class="btn-filter {{ period == '7' ? 'primary' : 'secondary' }}">
+        <button type="button" data-period="7"
+           class="btn-filter period-btn {{ period == '7' ? 'primary' : 'secondary' }}">
             7 jours
-        </a>
-        <a href="{{ path('app_boutique_orders', {id: boutique.id, period: '30'}) }}"
-           class="btn-filter {{ period == '30' ? 'primary' : 'secondary' }}">
+        </button>
+        <button type="button" data-period="30"
+           class="btn-filter period-btn {{ period == '30' ? 'primary' : 'secondary' }}">
             30 jours
-        </a>
-        <a href="{{ path('app_boutique_orders', {id: boutique.id, period: '90'}) }}"
-           class="btn-filter {{ period == '90' ? 'primary' : 'secondary' }}">
+        </button>
+        <button type="button" data-period="90"
+           class="btn-filter period-btn {{ period == '90' ? 'primary' : 'secondary' }}">
             90 jours
-        </a>
-        <a href="{{ path('app_boutique_orders', {id: boutique.id, period: ''}) }}"
-           class="btn-filter {{ period == '' ? 'primary' : 'secondary' }}">
+        </button>
+        <button type="button" data-period=""
+           class="btn-filter period-btn {{ period == '' ? 'primary' : 'secondary' }}">
             Tout
-        </a>
+        </button>
     </div>
 </div>
 
 <div class="filters-card">
     <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 0;">Filtres</h3>
-    <form method="get">
+    <form method="get" id="ordersFiltersForm">
         {% if period %}
             <input type="hidden" name="period" value="{{ period }}">
         {% endif %}
