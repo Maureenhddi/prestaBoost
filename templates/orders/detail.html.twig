@@ -245,6 +245,11 @@
             margin-bottom: 4px;
         }
 
+        .product-name a:hover {
+            color: var(--primary) !important;
+            text-decoration: underline !important;
+        }
+
         .product-ref {
             font-size: 12px;
             color: var(--gray-500);
@@ -604,7 +609,11 @@
                 {% for item in order.items %}
                 <tr>
                     <td>
-                        <div class="product-name">{{ item.productName }}</div>
+                        <div class="product-name">
+                            <a href="{{ path('app_product_detail', {boutiqueId: boutique.id, productId: item.productId}) }}" style="color: inherit; text-decoration: none; transition: color 0.2s ease;">
+                                {{ item.productName }}
+                            </a>
+                        </div>
                         {% if item.productReference %}
                             <div class="product-ref">Réf: {{ item.productReference }}</div>
                         {% endif %}

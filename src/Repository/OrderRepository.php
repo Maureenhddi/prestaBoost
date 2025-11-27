@@ -310,6 +310,7 @@ class OrderRepository extends ServiceEntityRepository
 
         $sql = "
             SELECT
+                oi.product_id,
                 oi.product_name,
                 oi.product_reference,
                 SUM(oi.quantity) as total_quantity,
@@ -321,7 +322,7 @@ class OrderRepository extends ServiceEntityRepository
             WHERE o.boutique_id = ?
                 AND o.order_date >= ?
                 AND o.order_date <= ?
-            GROUP BY oi.product_name, oi.product_reference
+            GROUP BY oi.product_id, oi.product_name, oi.product_reference
             ORDER BY {$sortField} {$orderDirection}
             LIMIT ?
         ";
@@ -335,6 +336,7 @@ class OrderRepository extends ServiceEntityRepository
 
         return array_map(function($row) {
             return [
+                'productId' => (int) $row['product_id'],
                 'productName' => $row['product_name'],
                 'productReference' => $row['product_reference'],
                 'totalQuantity' => (int) $row['total_quantity'],
