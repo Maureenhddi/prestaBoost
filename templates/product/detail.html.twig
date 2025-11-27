@@ -886,15 +886,15 @@
                     <span class="info-value">{{ salesStats.total_quantity }} unités</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">CA total</span>
+                    <span class="info-label">CA total TTC</span>
                     <span class="info-value">{{ salesStats.total_revenue|number_format(2, ',', ' ') }} €</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Prix moyen</span>
+                    <span class="info-label">Prix moyen TTC</span>
                     <span class="info-value">{{ salesStats.average_price|number_format(2, ',', ' ') }} €</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Marge réalisée</span>
+                    <span class="info-label">Marge HT réalisée</span>
                     <span class="info-value">{{ salesStats.total_margin|number_format(2, ',', ' ') }} € ({{ salesStats.margin_percent }}%)</span>
                 </div>
             </div>
@@ -917,11 +917,17 @@
             <div class="period-dates-row" style="display: flex; gap: 12px; align-items: center; padding-top: 12px; border-top: 1px solid var(--gray-200);">
                 <div class="period-date-group" style="display: flex; align-items: center; gap: 8px;">
                     <label for="customStartDate" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">Du</label>
-                    <input type="date" id="customStartDate" style="padding: 6px 10px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px; background: white; transition: all 0.2s ease; width: 140px;">
+                    <input type="date" id="customStartDate"
+                           {% if minDate %}min="{{ minDate }}"{% endif %}
+                           {% if maxDate %}max="{{ maxDate }}"{% endif %}
+                           style="padding: 6px 10px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px; background: white; transition: all 0.2s ease; width: 140px;">
                 </div>
                 <div class="period-date-group" style="display: flex; align-items: center; gap: 8px;">
                     <label for="customEndDate" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">au</label>
-                    <input type="date" id="customEndDate" style="padding: 6px 10px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px; background: white; transition: all 0.2s ease; width: 140px;">
+                    <input type="date" id="customEndDate"
+                           {% if minDate %}min="{{ minDate }}"{% endif %}
+                           {% if maxDate %}max="{{ maxDate }}"{% endif %}
+                           style="padding: 6px 10px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px; background: white; transition: all 0.2s ease; width: 140px;">
                 </div>
             </div>
         </div>
@@ -1060,6 +1066,78 @@ function switchTab(event, tabId) {
 let stockChart = null;
 const boutiqueId = {{ boutique.id }};
 const productId = {{ product.productId }};
+
+// Available dates for date picker validation
+const availableDates = {{ availableDates|json_encode|raw }};
+
+// Setup date pickers with available dates highlighting
+document.addEventListener('DOMContentLoaded', function() {
+    const startDateInput = document.getElementById('customStartDate');
+    const endDateInput = document.getElementById('customEndDate');
+
+    if (startDateInput && endDateInput && availableDates && availableDates.length > 0) {
+        // Get date range from available dates
+        const firstAvailableDate = new Date(availableDates[0]);
+        const lastAvailableDate = new Date(availableDates[availableDates.length - 1]);
+        const daysDiff = Math.floor((lastAvailableDate - firstAvailableDate) / (1000 * 60 * 60 * 24));
+
+        console.log('Available date range:', availableDates[0], 'to', availableDates[availableDates.length - 1]);
+        console.log('Days of data available:', daysDiff);
+
+        // Disable period buttons that exceed available data
+        document.querySelectorAll('.period-btn-filter[data-period]').forEach(btn => {
+            const period = parseInt(btn.getAttribute('data-period'));
+            if (period > daysDiff) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.title = `Seulement ${daysDiff} jours de données disponibles`;
+            }
+        });
+
+        // Add custom CSS for unavailable dates
+        const style = document.createElement('style');
+        style.textContent = `
+            input[type="date"]::-webkit-calendar-picker-indicator {
+                cursor: pointer;
+            }
+            /* Note: Graying out specific dates in native date picker is limited.
+               We'll use validation instead to provide feedback. */
+        `;
+        document.head.appendChild(style);
+
+        // Validate selected dates
+        function validateDate(input) {
+            const selectedDate = input.value;
+            if (selectedDate && !availableDates.includes(selectedDate)) {
+                input.setCustomValidity('Aucune donnée de stock disponible pour cette date');
+                input.style.borderColor = '#f59e0b';
+                input.style.background = '#fef3c7';
+            } else {
+                input.setCustomValidity('');
+                input.style.borderColor = 'var(--gray-300)';
+                input.style.background = 'white';
+            }
+        }
+
+        startDateInput.addEventListener('change', function() {
+            validateDate(this);
+        });
+
+        endDateInput.addEventListener('change', function() {
+            validateDate(this);
+        });
+
+        // Add tooltip showing available date range
+        if (availableDates.length > 0) {
+            const firstDate = availableDates[0];
+            const lastDate = availableDates[availableDates.length - 1];
+            const tooltip = `Données disponibles du ${firstDate} au ${lastDate} (${daysDiff} jours)`;
+            startDateInput.title = tooltip;
+            endDateInput.title = tooltip;
+        }
+    }
+});
 
 // Load history data via AJAX
 function loadHistoryData(period = '30', startDate = null, endDate = null, showOrders = false) {
@@ -1243,9 +1321,27 @@ document.querySelectorAll('.period-btn-filter[data-period]').forEach(btn => {
         this.style.borderColor = 'var(--primary)';
 
         // Calculate and set date range in custom date inputs
-        const endDate = new Date();
-        const startDate = new Date(endDate);
+        let endDate = new Date();
+        let startDate = new Date(endDate);
         startDate.setDate(startDate.getDate() - parseInt(period));
+
+        // Constrain dates to available data range
+        if (availableDates && availableDates.length > 0) {
+            const minAvailableDate = new Date(availableDates[0]);
+            const maxAvailableDate = new Date(availableDates[availableDates.length - 1]);
+
+            // Adjust start date if it goes before first available date
+            if (startDate < minAvailableDate) {
+                startDate = minAvailableDate;
+                console.log('Start date adjusted to first available date:', availableDates[0]);
+            }
+
+            // Adjust end date if it goes after last available date
+            if (endDate > maxAvailableDate) {
+                endDate = maxAvailableDate;
+                console.log('End date adjusted to last available date:', availableDates[availableDates.length - 1]);
+            }
+        }
 
         // Format dates as YYYY-MM-DD
         const formatDate = (date) => {

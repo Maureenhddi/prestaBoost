@@ -995,19 +995,22 @@
             'dateEndName': 'endDate',
             'formId': 'stocksFiltersForm',
             'cookieName': 'stocks_period',
-            'inlineStyle': false
+            'inlineStyle': false,
+            'minDate': minDate,
+            'maxDate': maxDate,
+            'availableDates': availableDates
         } %}
 
         <div class="filters-grid">
             <!-- Première rangée: Recherche et Catégorie -->
             <div class="filters-row">
                 <div class="filter-group">
-                    <label for="search">Recherche</label>
-                    <input type="text" id="search" name="search" value="{{ search }}" placeholder="Nom ou référence...">
+                    <label for="search" title="Rechercher un produit par son nom ou sa référence">Recherche</label>
+                    <input type="text" id="search" name="search" value="{{ search }}" placeholder="Nom ou référence..." title="Entrez un nom de produit ou une référence pour filtrer les résultats">
                 </div>
                 <div class="filter-group">
-                    <label for="category">Catégorie</label>
-                    <select id="category" name="category">
+                    <label for="category" title="Filtrer les produits par catégorie">Catégorie</label>
+                    <select id="category" name="category" title="Sélectionnez une catégorie pour afficher uniquement les produits de cette catégorie">
                         <option value="">Toutes les catégories</option>
                         {% for cat in categories %}
                             <option value="{{ cat }}" {{ category == cat ? 'selected' : '' }}>{{ cat }}</option>
@@ -1018,23 +1021,23 @@
 
             <!-- Deuxième rangée: Niveau de stock badges -->
             <div class="filter-group">
-                <label style="margin-bottom: 12px; display: block;">Niveau de stock</label>
+                <label style="margin-bottom: 12px; display: block;" title="Filtrer les produits selon leur niveau de stock actuel">Niveau de stock</label>
                 <div class="filter-badges-container">
-                    <label class="filter-badge-label">
+                    <label class="filter-badge-label" title="Produits avec stock disponible (quantité > seuil de stock faible)">
                         <input type="checkbox" name="filters[]" value="instock" {{ 'instock' in filters ? 'checked' : '' }}>
                         <div class="filter-badge instock">
                             <span class="filter-badge-icon">✅</span>
                             <span class="filter-badge-text">En stock</span>
                         </div>
                     </label>
-                    <label class="filter-badge-label">
+                    <label class="filter-badge-label" title="Produits dont le stock est inférieur au seuil configuré (attention recommandée)">
                         <input type="checkbox" name="filters[]" value="low" {{ 'low' in filters ? 'checked' : '' }}>
                         <div class="filter-badge low">
                             <span class="filter-badge-icon">⚠️</span>
                             <span class="filter-badge-text">Stock faible</span>
                         </div>
                     </label>
-                    <label class="filter-badge-label">
+                    <label class="filter-badge-label" title="Produits en rupture de stock (quantité = 0)">
                         <input type="checkbox" name="filters[]" value="outofstock" {{ 'outofstock' in filters ? 'checked' : '' }}>
                         <div class="filter-badge outofstock">
                             <span class="filter-badge-icon">❌</span>
@@ -1047,21 +1050,21 @@
             <!-- Troisième rangée: Tout sur une ligne -->
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <label for="daysInput" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">📅 Jours historique</label>
-                    <input type="number" id="daysInput" name="days" min="1" max="90" value="{{ days }}" placeholder="7" style="width: 60px; padding: 6px 8px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px;">
+                    <label for="daysInput" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;" title="Nombre de jours d'historique de stock à afficher dans le tableau (1-90 jours)">📅 Jours historique</label>
+                    <input type="number" id="daysInput" name="days" min="1" max="90" value="{{ days }}" placeholder="7" style="width: 60px; padding: 6px 8px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px;" title="Afficher les stocks des X derniers jours (ex: 7 pour voir la dernière semaine)">
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <label for="excludeOutOfStockDays" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">🚫 Exclure ruptures</label>
-                    <input type="number" id="excludeOutOfStockDays" name="excludeOutOfStockDays" min="0" max="365" value="{{ excludeOutOfStockDays ?? '' }}" placeholder="30" style="width: 60px; padding: 6px 8px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px;">
+                    <label for="excludeOutOfStockDays" style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;" title="Masquer les produits qui n'ont pas été en stock pendant au moins X jours">🚫 Exclure ruptures</label>
+                    <input type="number" id="excludeOutOfStockDays" name="excludeOutOfStockDays" min="0" max="365" value="{{ excludeOutOfStockDays ?? '' }}" placeholder="30" style="width: 60px; padding: 6px 8px; border: 2px solid var(--gray-300); border-radius: 8px; font-size: 13px;" title="Exclure les produits en rupture depuis X jours (ex: 30 pour masquer les produits sans stock depuis 1 mois)">
                 </div>
                 <div style="display: flex; gap: 8px; margin-left: auto;">
-                    <label class="checkbox-label" style="padding: 8px 12px;">
+                    <label class="checkbox-label" style="padding: 8px 12px;" title="Afficher le nombre total de produits vendus sur la période">
                         <input type="checkbox" id="showSales" name="showSales" value="1" {{ showSales ? 'checked' : '' }}>
                         <span style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">📊 Produits vendus</span>
                     </label>
-                    <label class="checkbox-label" style="padding: 8px 12px;">
+                    <label class="checkbox-label" style="padding: 8px 12px;" title="Afficher le chiffre d'affaires TTC total généré par ce produit sur la période">
                         <input type="checkbox" id="showRevenue" name="showRevenue" value="1" {{ showRevenue ? 'checked' : '' }}>
-                        <span style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">💰 CA généré</span>
+                        <span style="font-size: 12px; font-weight: 600; color: var(--gray-700); white-space: nowrap;">💰 CA TTC généré</span>
                     </label>
                 </div>
             </div>
@@ -1089,7 +1092,7 @@
                 <thead>
                     <tr>
                         <th>
-                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'reference', 'order': (sort == 'reference' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'reference', 'order': (sort == 'reference' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Référence unique du produit dans votre catalogue">
                                 Référence
                                 <span class="sort-icon {{ sort == 'reference' ? 'active' : '' }}">
                                     <span class="sort-up">{{ (sort == 'reference' and order == 'asc') ? '▲' : '△' }}</span>
@@ -1098,7 +1101,7 @@
                             </a>
                         </th>
                         <th>
-                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'name', 'order': (sort == 'name' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'name', 'order': (sort == 'name' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Nom commercial du produit tel qu'affiché sur votre boutique">
                                 Nom du produit
                                 <span class="sort-icon {{ sort == 'name' ? 'active' : '' }}">
                                     <span class="sort-up">{{ (sort == 'name' and order == 'asc') ? '▲' : '△' }}</span>
@@ -1107,7 +1110,7 @@
                             </a>
                         </th>
                         <th>
-                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'category', 'order': (sort == 'category' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'category', 'order': (sort == 'category' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Catégorie du produit pour faciliter l'organisation">
                                 Catégorie
                                 <span class="sort-icon {{ sort == 'category' ? 'active' : '' }}">
                                     <span class="sort-up">{{ (sort == 'category' and order == 'asc') ? '▲' : '△' }}</span>
@@ -1116,7 +1119,7 @@
                             </a>
                         </th>
                         <th class="center">
-                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'out_of_stock', 'order': (sort == 'out_of_stock' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                            <a href="{{ path('app_boutique_stocks', {'id': boutique.id, 'page': currentPage, 'filters': filters, 'search': search, 'days': days, 'category': category, 'startDate': startDate, 'endDate': endDate, 'showSales': showSales ? 1 : 0, 'showRevenue': showRevenue ? 1 : 0, 'sort': 'out_of_stock', 'order': (sort == 'out_of_stock' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Nombre de jours où le produit était en rupture de stock (quantité = 0) sur la période sélectionnée">
                                 Jours hors stock
                                 <span class="sort-icon {{ sort == 'out_of_stock' ? 'active' : '' }}">
                                     <span class="sort-up">{{ (sort == 'out_of_stock' and order == 'asc') ? '▲' : '△' }}</span>
@@ -1125,9 +1128,9 @@
                             </a>
                         </th>
                         {% for date in stocksData.dates %}
-                            <th class="center">{{ date.label }}</th>
+                            <th class="center" title="Quantité en stock à cette date (collectée quotidiennement)">{{ date.label }}</th>
                         {% endfor %}
-                        <th class="center">Actions</th>
+                        <th class="center" title="Actions disponibles pour ce produit">Actions</th>
                     </tr>
                 </thead>
                 <tbody>

@@ -89,23 +89,29 @@
 <div class="filters-period-card">
     <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
         <div style="display: flex; gap: 6px;">
-            <button type="button" class="quick-period-btn {{ activePeriod == '7' ? 'active' : '' }}" data-period="7" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">7j</button>
-            <button type="button" class="quick-period-btn {{ activePeriod == '30' ? 'active' : '' }}" data-period="30" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">30j</button>
-            <button type="button" class="quick-period-btn {{ activePeriod == '90' ? 'active' : '' }}" data-period="90" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">90j</button>
+            <button type="button" class="quick-period-btn {{ activePeriod == '7' ? 'active' : '' }}" data-period="7" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}" title="Afficher les 7 derniers jours">7j</button>
+            <button type="button" class="quick-period-btn {{ activePeriod == '30' ? 'active' : '' }}" data-period="30" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}" title="Afficher les 30 derniers jours">30j</button>
+            <button type="button" class="quick-period-btn {{ activePeriod == '90' ? 'active' : '' }}" data-period="90" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}" title="Afficher les 90 derniers jours">90j</button>
             {% if showAllButton|default(false) %}
-            <button type="button" class="quick-period-btn {{ activePeriod == '' ? 'active' : '' }}" data-period="" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}">Tout</button>
+            <button type="button" class="quick-period-btn {{ activePeriod == '' ? 'active' : '' }}" data-period="" data-cookie="{{ cookieName|default('period') }}" data-form="{{ formId|default('filtersForm') }}" title="Afficher toutes les données disponibles">Tout</button>
             {% endif %}
         </div>
 
         {% if showDateInputs|default(true) %}
         <div style="display: flex; gap: 6px; align-items: center; margin-left: 8px; padding-left: 12px; border-left: 1px solid var(--gray-300);">
             <div class="period-date-group">
-                <label for="period_start_date">Du</label>
-                <input type="date" id="period_start_date" name="{{ dateStartName|default('start_date') }}" value="{{ startDate|default('') }}">
+                <label for="period_start_date" title="Date de début de la période à analyser">Du</label>
+                <input type="date" id="period_start_date" name="{{ dateStartName|default('start_date') }}" value="{{ startDate|default('') }}"
+                       {% if minDate|default(false) %}min="{{ minDate }}"{% endif %}
+                       {% if maxDate|default(false) %}max="{{ maxDate }}"{% endif %}
+                       title="Sélectionnez la date de début pour filtrer les données">
             </div>
             <div class="period-date-group">
-                <label for="period_end_date">au</label>
-                <input type="date" id="period_end_date" name="{{ dateEndName|default('end_date') }}" value="{{ endDate|default('') }}">
+                <label for="period_end_date" title="Date de fin de la période à analyser">au</label>
+                <input type="date" id="period_end_date" name="{{ dateEndName|default('end_date') }}" value="{{ endDate|default('') }}"
+                       {% if minDate|default(false) %}min="{{ minDate }}"{% endif %}
+                       {% if maxDate|default(false) %}max="{{ maxDate }}"{% endif %}
+                       title="Sélectionnez la date de fin pour filtrer les données">
             </div>
         </div>
         {% endif %}
@@ -136,12 +142,60 @@
     function initPeriodFilters() {
         console.log('🚀 initPeriodFilters() called');
 
+        // Get date inputs once at the beginning
+        const startDateInput = document.getElementById('period_start_date');
+        const endDateInput = document.getElementById('period_end_date');
+
+        // Setup date validation if available dates are provided
+        {% if availableDates|default(false) %}
+        const availableDates = {{ availableDates|json_encode|raw }};
+        console.log('🔍 availableDates received:', availableDates);
+
+        if (startDateInput && endDateInput && availableDates && availableDates.length > 0) {
+            // Get date range from available dates
+            const firstAvailableDate = new Date(availableDates[0]);
+            const lastAvailableDate = new Date(availableDates[availableDates.length - 1]);
+            const daysDiff = availableDates.length; // Use actual number of dates, not date range
+
+            console.log('📅 Available date range:', availableDates[0], 'to', availableDates[availableDates.length - 1]);
+            console.log('📊 Days of data available:', daysDiff);
+
+            // Disable period buttons that exceed available data
+            document.querySelectorAll('.quick-period-btn').forEach(btn => {
+                const period = btn.getAttribute('data-period');
+                if (period && parseInt(period) > daysDiff) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                    btn.title = `Seulement ${daysDiff} jours de données disponibles`;
+                }
+            });
+
+            // Add tooltips
+            const tooltip = `Données disponibles du ${availableDates[0]} au ${availableDates[availableDates.length - 1]} (${daysDiff} jours)`;
+            startDateInput.title = tooltip;
+            endDateInput.title = tooltip;
+
+            // Validate selected dates
+            function validateDate(input) {
+                const selectedDate = input.value;
+                if (selectedDate && !availableDates.includes(selectedDate)) {
+                    input.style.borderColor = '#f59e0b';
+                    input.style.background = '#fef3c7';
+                } else {
+                    input.style.borderColor = 'var(--gray-300)';
+                    input.style.background = 'white';
+                }
+            }
+
+            startDateInput.addEventListener('change', function() { validateDate(this); });
+            endDateInput.addEventListener('change', function() { validateDate(this); });
+        }
+        {% endif %}
+
         // Handle quick period buttons
         const quickPeriodBtns = document.querySelectorAll('.quick-period-btn');
         console.log('📊 Found', quickPeriodBtns.length, 'period buttons');
-
-        const startDateInput = document.getElementById('period_start_date');
-        const endDateInput = document.getElementById('period_end_date');
 
         // Exit if no period buttons found (component not used on this page)
         if (quickPeriodBtns.length === 0) {

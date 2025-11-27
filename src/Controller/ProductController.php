@@ -264,6 +264,49 @@ class ProductController extends AbstractController
             ];
         }, $stockHistory);
 
+        // Get earliest and latest stock dates for date picker constraints
+        $earliestStock = $this->dailyStockRepository->createQueryBuilder('ds')
+            ->where('ds.boutique = :boutiqueId')
+            ->andWhere('ds.productId = :productId')
+            ->setParameter('boutiqueId', $boutiqueId)
+            ->setParameter('productId', $productId)
+            ->orderBy('ds.collectedAt', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        $latestStock = $this->dailyStockRepository->createQueryBuilder('ds')
+            ->where('ds.boutique = :boutiqueId')
+            ->andWhere('ds.productId = :productId')
+            ->setParameter('boutiqueId', $boutiqueId)
+            ->setParameter('productId', $productId)
+            ->orderBy('ds.collectedAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        $minDate = $earliestStock ? $earliestStock->getCollectedAt()->format('Y-m-d') : null;
+        $maxDate = $latestStock ? $latestStock->getCollectedAt()->format('Y-m-d') : (new \DateTime())->format('Y-m-d');
+
+        // Get all dates where we have stock data
+        $availableStocks = $this->dailyStockRepository->createQueryBuilder('ds')
+            ->select('ds.collectedAt')
+            ->where('ds.boutique = :boutiqueId')
+            ->andWhere('ds.productId = :productId')
+            ->setParameter('boutiqueId', $boutiqueId)
+            ->setParameter('productId', $productId)
+            ->orderBy('ds.collectedAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        // Extract unique dates (Y-m-d format) from collected timestamps
+        $datesMap = [];
+        foreach ($availableStocks as $stock) {
+            $dateStr = $stock['collectedAt']->format('Y-m-d');
+            $datesMap[$dateStr] = true;
+        }
+        $availableDatesArray = array_keys($datesMap);
+
         // Get order data if requested
         $orderData = [];
         if ($showOrders) {
@@ -286,6 +329,9 @@ class ProductController extends AbstractController
             'startDate' => $startDate,
             'endDate' => $endDate,
             'showOrders' => $showOrders,
+            'minDate' => $minDate,
+            'maxDate' => $maxDate,
+            'availableDates' => $availableDatesArray,
         ]);
     }
 

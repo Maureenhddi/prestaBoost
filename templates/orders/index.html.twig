@@ -619,12 +619,12 @@ document.addEventListener('DOMContentLoaded', function() {
         <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 0;">Filtres</h3>
         <div class="filters-grid">
             <div class="filter-group">
-                <label for="search">Recherche</label>
-                <input type="text" id="search" name="search" value="{{ search }}" placeholder="Référence, ID...">
+                <label for="search" title="Rechercher une commande par sa référence ou son ID PrestaShop">Recherche</label>
+                <input type="text" id="search" name="search" value="{{ search }}" placeholder="Référence, ID..." title="Entrez une référence de commande ou un ID PrestaShop pour filtrer">
             </div>
             <div class="filter-group">
-                <label for="status">Statut</label>
-                <select id="status" name="status">
+                <label for="status" title="Filtrer les commandes par leur statut de traitement">Statut</label>
+                <select id="status" name="status" title="Sélectionnez un statut pour afficher uniquement les commandes correspondantes">
                     <option value="">Tous</option>
                     <option value="1" {{ status == '1' ? 'selected' : '' }}>En attente</option>
                     <option value="2" {{ status == '2' ? 'selected' : '' }}>Paiement accepté</option>
@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <thead>
                 <tr>
                     <th>
-                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'reference', order: (sort == 'reference' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'reference', order: (sort == 'reference' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Référence unique de la commande générée par PrestaShop">
                             Référence
                             <span class="sort-icon {{ sort == 'reference' ? 'active' : '' }}">
                                 <span class="sort-up">{{ (sort == 'reference' and order == 'asc') ? '▲' : '△' }}</span>
@@ -666,7 +666,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     </th>
                     <th>
-                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'order_id', order: (sort == 'order_id' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'order_id', order: (sort == 'order_id' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Identifiant numérique de la commande dans PrestaShop">
                             ID PrestaShop
                             <span class="sort-icon {{ sort == 'order_id' ? 'active' : '' }}">
                                 <span class="sort-up">{{ (sort == 'order_id' and order == 'asc') ? '▲' : '△' }}</span>
@@ -675,7 +675,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     </th>
                     <th>
-                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'date', order: (sort == 'date' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'date', order: (sort == 'date' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Date et heure à laquelle la commande a été passée">
                             Date
                             <span class="sort-icon {{ sort == 'date' ? 'active' : '' }}">
                                 <span class="sort-up">{{ (sort == 'date' and order == 'asc') ? '▲' : '△' }}</span>
@@ -684,8 +684,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     </th>
                     <th>
-                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'amount', order: (sort == 'amount' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
-                            Montant
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'amount', order: (sort == 'amount' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Montant total TTC de la commande payé par le client">
+                            Montant TTC
                             <span class="sort-icon {{ sort == 'amount' ? 'active' : '' }}">
                                 <span class="sort-up">{{ (sort == 'amount' and order == 'asc') ? '▲' : '△' }}</span>
                                 <span class="sort-down">{{ (sort == 'amount' and order == 'desc') ? '▼' : '▽' }}</span>
@@ -693,17 +693,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     </th>
                     <th>
-                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'margin', order: (sort == 'margin' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header">
-                            Marge
+                        <a href="{{ path('app_boutique_orders', {id: boutique.id, page: currentPage, search: search, status: status, period: period, start_date: startDate, end_date: endDate, sort: 'margin', order: (sort == 'margin' and order == 'asc') ? 'desc' : 'asc'}) }}" class="sortable-header" title="Bénéfice net réalisé sur cette commande (prix de vente - coût d'achat)">
+                            Marge HT
                             <span class="sort-icon {{ sort == 'margin' ? 'active' : '' }}">
                                 <span class="sort-up">{{ (sort == 'margin' and order == 'asc') ? '▲' : '△' }}</span>
                                 <span class="sort-down">{{ (sort == 'margin' and order == 'desc') ? '▼' : '▽' }}</span>
                             </span>
                         </a>
                     </th>
-                    <th>Paiement</th>
-                    <th>Statut</th>
-                    <th>Action</th>
+                    <th title="Méthode de paiement utilisée par le client">Paiement</th>
+                    <th title="État actuel du traitement de la commande">Statut</th>
+                    <th title="Actions disponibles pour cette commande">Action</th>
                 </tr>
             </thead>
             <tbody>
