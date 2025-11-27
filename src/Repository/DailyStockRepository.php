@@ -829,6 +829,45 @@ class DailyStockRepository extends ServiceEntityRepository
             $outOfStockDays[$productId] = $outOfStockCount;
         }
 
+        // Calculate total days in stock for each product
+        $totalDaysInStock = [];
+        $sql = "
+            SELECT product_id, COUNT(DISTINCT DATE(collected_at)) as total_days
+            FROM daily_stocks
+            WHERE boutique_id = :boutique_id
+                AND product_id IN ({$inClause})
+            GROUP BY product_id
+        ";
+        $totalDaysResult = $conn->executeQuery($sql, ['boutique_id' => $boutique->getId()]);
+        foreach ($totalDaysResult->fetchAllAssociative() as $row) {
+            $totalDaysInStock[$row['product_id']] = $row['total_days'];
+        }
+
+        // Calculate last restock date for each product (when quantity increased)
+        $lastRestockDates = [];
+        $sql = "
+            WITH daily_changes AS (
+                SELECT
+                    product_id,
+                    DATE(collected_at) as stock_date,
+                    quantity,
+                    LAG(quantity) OVER (PARTITION BY product_id ORDER BY collected_at) as prev_quantity
+                FROM daily_stocks
+                WHERE boutique_id = :boutique_id
+                    AND product_id IN ({$inClause})
+            )
+            SELECT
+                product_id,
+                MAX(stock_date) as last_restock_date
+            FROM daily_changes
+            WHERE quantity > COALESCE(prev_quantity, 0)
+            GROUP BY product_id
+        ";
+        $restockResult = $conn->executeQuery($sql, ['boutique_id' => $boutique->getId()]);
+        foreach ($restockResult->fetchAllAssociative() as $row) {
+            $lastRestockDates[$row['product_id']] = $row['last_restock_date'];
+        }
+
         // Get sales data if requested
         $salesData = [];
         if ($showSales || $showRevenue) {
@@ -856,6 +895,10 @@ class DailyStockRepository extends ServiceEntityRepository
             }
             // Add out of stock days count
             $product['out_of_stock_days'] = $outOfStockDays[$productId] ?? 0;
+            // Add total days in stock
+            $product['total_days_in_stock'] = $totalDaysInStock[$productId] ?? 0;
+            // Add last restock date
+            $product['last_restock_date'] = $lastRestockDates[$productId] ?? null;
         }
 
         // Apply excludeOutOfStockDays filter if specified
