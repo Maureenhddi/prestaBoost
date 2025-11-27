@@ -1069,4 +1069,58 @@ class PrestaShopCollector
             ];
         }
     }
+
+    /**
+     * Fetch stock movements from PrestaShop API
+     * Returns stock movements with date, quantity, sign, and reason
+     */
+    public function fetchStockMovements(Boutique $boutique, ?\DateTimeImmutable $startDate = null): array
+    {
+        $this->logger->info('Fetching stock movements for boutique', [
+            'boutique_id' => $boutique->getId(),
+            'start_date' => $startDate?->format('Y-m-d')
+        ]);
+
+        try {
+            $url = rtrim($boutique->getDomain(), '/') . '/api/stock_movements';
+
+            $queryParams = [
+                'display' => '[id,id_product,id_product_attribute,physical_quantity,sign,date_add,id_stock_mvt_reason,product_name,reference]',
+                'output_format' => 'JSON',
+                'sort' => '[date_add_DESC]'
+            ];
+
+            // Add date filter if provided
+            if ($startDate) {
+                $queryParams['filter[date_add]'] = '[' . $startDate->format('Y-m-d') . ',]';
+            }
+
+            $response = $this->httpClient->request('GET', $url, [
+                'auth_basic' => [$boutique->getApiKey(), ''],
+                'query' => $queryParams,
+                'timeout' => 30
+            ]);
+
+            $data = $response->toArray();
+
+            if (isset($data['stock_movements'])) {
+                $movements = is_array($data['stock_movements']) ? $data['stock_movements'] : [$data['stock_movements']];
+                $this->logger->info('Stock movements fetched successfully', ['count' => count($movements)]);
+                return $movements;
+            }
+
+            $this->logger->warning('No stock_movements key in API response');
+            return [];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Error fetching stock movements', [
+                'boutique_id' => $boutique->getId(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return empty array instead of throwing to allow graceful degradation
+            return [];
+        }
+    }
 }
