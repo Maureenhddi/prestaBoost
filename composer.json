@@ -16,29 +16,29 @@
         "doctrine/orm": "^2.17",
         "lexik/jwt-authentication-bundle": "^2.20",
         "nelmio/cors-bundle": "^2.4",
-        "symfony/console": "7.0.*",
-        "symfony/doctrine-messenger": "7.0.*",
-        "symfony/dotenv": "7.0.*",
+        "symfony/console": "7.4.*",
+        "symfony/doctrine-messenger": "7.4.*",
+        "symfony/dotenv": "7.4.*",
         "symfony/flex": "^2",
-        "symfony/framework-bundle": "7.0.*",
-        "symfony/http-client": "7.0.*",
+        "symfony/framework-bundle": "7.4.*",
+        "symfony/http-client": "7.4.*",
         "symfony/maker-bundle": "^1.50",
         "symfony/mercure-bundle": "^0.3.9",
-        "symfony/messenger": "7.0.*",
-        "symfony/property-access": "7.0.*",
-        "symfony/runtime": "7.0.*",
-        "symfony/scheduler": "7.0.*",
-        "symfony/security-bundle": "7.0.*",
-        "symfony/serializer": "7.0.*",
-        "symfony/twig-bundle": "7.0.*",
+        "symfony/messenger": "7.4.*",
+        "symfony/property-access": "7.4.*",
+        "symfony/runtime": "7.4.*",
+        "symfony/scheduler": "7.4.*",
+        "symfony/security-bundle": "7.4.*",
+        "symfony/serializer": "7.4.*",
+        "symfony/twig-bundle": "7.4.*",
         "symfony/ux-turbo": "^2.31",
-        "symfony/validator": "7.0.*",
-        "symfony/web-profiler-bundle": "7.0.*",
-        "symfony/yaml": "7.0.*"
+        "symfony/validator": "7.4.*",
+        "symfony/web-profiler-bundle": "7.4.*",
+        "symfony/yaml": "7.4.*"
     },
     "require-dev": {
-        "symfony/debug-bundle": "7.0.*",
-        "symfony/stopwatch": "7.0.*"
+        "symfony/debug-bundle": "7.4.*",
+        "symfony/stopwatch": "7.4.*"
     },
     "config": {
         "allow-plugins": {
@@ -86,7 +86,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "7.0.*"
+            "require": "7.4.*"
         }
     }
 }
